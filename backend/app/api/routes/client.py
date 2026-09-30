@@ -1,27 +1,51 @@
-from datetime import datetime
+from fastapi import APIRouter, status, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from app.core.database import get_db
+from app.models.client import Client
+from app.models.law_firm import LawFirm
+from app.schemas.client import ClientResponse, ClientCreate
+
+router = APIRouter()
 
 
-class ClientBase(BaseModel):
-    name: str = Field(min_length=2, max_length=225)
-    email: str = Field(max_length=255)
-    phone: str = Field(max_length=20)
+@router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
+def create_client(
+    data: ClientCreate,
+    db: Session = Depends(get_db),
+):
+    law_firm = db.scalar(select(LawFirm).where(LawFirm.id == data.law_firm_id))
+    if law_firm is None:
+        raise HTTPException(status_code=404, detail="law firm not found")
+
+    client = Client(
+        name=data.name,
+        email=data.email,
+        phone=data.phone,
+        law_firm_id=data.law_firm_id,
+    )
+    db.add(client)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="client with this email or phone already exists",
+        )
+    db.refresh(client)
+    return client
 
 
-class ClientCreate(ClientBase):
-    law_firm_id: UUID
-
-
-class ClientUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=2, max_length=225)
-    email: str | None = Field(default=None, max_length=255)
-    phone: str | None = Field(default=None, max_length=20)
-
-
-class ClientResponse(ClientBase):
-    id: UUID
-    law_firm_id: UUID
-    created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+@router.get("/{client_id}", response_model=ClientResponse)
+def get_client(
+    client_id: UUID,
+    db: Session = Depends(get_db),
+):
+    client = db.scalar(select(Client).where(Client.id == client_id))
+    if client is None:
+        raise HTTPException(status_code=404, detail="client not found")
+    return client

@@ -6,6 +6,7 @@ from uuid import UUID
 from app.core.database import get_db
 from app.models.lawyer import Lawyer
 from app.schemas.lawyer import LawyerResponse, LawyerCreate,LawyerUpdate
+from app.models.case import Case
 router =APIRouter()
 
 @router.post("/",
@@ -85,6 +86,15 @@ def delete_lawyer(
             raise HTTPException(
                 status_code=404,
                 detail="Lawyer not found"
+            )
+        has_cases=db.scalar(
+            select(Case.id).where(Case.lawyer_id==lawyer_id)
+        )is not None
+
+        if has_cases:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="cannot delete lawyer:existing cases reference this layer",
             )
 
         db.delete(lawyer)
