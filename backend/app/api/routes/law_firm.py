@@ -11,6 +11,8 @@ from app.core.database import get_db
 from app.schemas.law_firm import LawFirmCreate, LawFirmResponse
 from app.models.client import Client
 from app.models.case import Case
+from app.api.routes.auth import require_role
+from app.models.user import User
 
 from uuid import UUID
 import uuid
@@ -81,6 +83,7 @@ def get_law_firm_lawyers(
 def delete_law_firm(
     law_firm_id:UUID,
     db:Session=Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),    
 ):
     stmt=select(LawFirm).where(LawFirm.id==law_firm_id)
     law_firm=db.scalar(stmt)
