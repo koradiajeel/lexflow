@@ -24,6 +24,11 @@ def create_lawyer(
     db:Session=Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if data.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="you can only create lawyers in your own law firm",
+        )    
     lawyer=Lawyer(
         name=data.name,
         email=data.email,
@@ -46,6 +51,8 @@ def get_lawyer(
 ):
     stmt=select(Lawyer).where(Lawyer.id==lawyer_id)
     lawyer=db.scalar(stmt)
+    if lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="lawyer not found")
     if lawyer is None:
         raise HTTPException(
             status_code=404,
@@ -62,7 +69,8 @@ def update_lawyer(
 ):
     stmt=select(Lawyer).where(Lawyer.id == lawyer_id)
     lawyer=db.scalar(stmt)
-
+    if lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="lawyer not found")
     if lawyer is None:
         raise HTTPException(
             status_code=404,
@@ -90,6 +98,8 @@ def delete_lawyer(
 ):
         stmt = select(Lawyer).where(Lawyer.id == lawyer_id)
         lawyer = db.scalar(stmt)
+        if lawyer.law_firm_id != current_user.law_firm_id:
+            raise HTTPException(status_code=404, detail="lawyer not found")
 
         if lawyer is None:
             raise HTTPException(

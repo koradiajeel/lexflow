@@ -28,6 +28,15 @@ def create_case(
     if lawyer is None:
         raise HTTPException(status_code=404, detail="lawyer not found")
 
+    if (
+        lawyer.law_firm_id != current_user.law_firm_id
+        or client.law_firm_id != current_user.law_firm_id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="client or lawyer not found",
+        )    
+
     case = Case(
         title=data.title,
         description=data.description,
@@ -49,6 +58,11 @@ def get_case(
     case = db.scalar(select(Case).where(Case.id == case_id))
     if case is None:
         raise HTTPException(status_code=404, detail="case not found")
+
+    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
+    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="case not found")
+
     return case
 
 
@@ -63,9 +77,13 @@ def update_case(
     if case is None:
         raise HTTPException(status_code=404, detail="case not found")
 
+    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
+    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="case not found")
+
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(case, field, value)
 
     db.commit()
     db.refresh(case)
-    return case
+    return case 

@@ -20,6 +20,12 @@ def create_client(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if data.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="you can only create clients in your own law firm",
+        )
+    
     law_firm = db.scalar(select(LawFirm).where(LawFirm.id == data.law_firm_id))
     if law_firm is None:
         raise HTTPException(status_code=404, detail="law firm not found")
@@ -52,4 +58,8 @@ def get_client(
     client = db.scalar(select(Client).where(Client.id == client_id))
     if client is None:
         raise HTTPException(status_code=404, detail="client not found")
+
+    if client.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="client not found")
+
     return client
