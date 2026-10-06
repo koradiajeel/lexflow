@@ -7,6 +7,12 @@ from app.core.database import get_db
 from app.models.lawyer import Lawyer
 from app.schemas.lawyer import LawyerResponse, LawyerCreate,LawyerUpdate
 from app.models.case import Case
+from app.api.routes.auth import require_role
+from app.models.user import User
+from app.api.routes.auth import require_role, get_current_user
+
+
+
 router =APIRouter()
 
 @router.post("/",
@@ -16,6 +22,7 @@ router =APIRouter()
 def create_lawyer(
     data:LawyerCreate,
     db:Session=Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     lawyer=Lawyer(
         name=data.name,
@@ -34,6 +41,7 @@ def create_lawyer(
 def get_lawyer(
     lawyer_id:UUID,
     db:Session=Depends(get_db),
+    current_user: User = Depends(get_current_user),
 
 ):
     stmt=select(Lawyer).where(Lawyer.id==lawyer_id)
@@ -50,7 +58,7 @@ def update_lawyer(
     lawyer_id: UUID,
     data:LawyerUpdate,
     db:Session=Depends(get_db),
-
+    current_user: User = Depends(get_current_user),
 ):
     stmt=select(Lawyer).where(Lawyer.id == lawyer_id)
     lawyer=db.scalar(stmt)
@@ -78,6 +86,7 @@ def update_lawyer(
 def delete_lawyer(
     lawyer_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
 ):
         stmt = select(Lawyer).where(Lawyer.id == lawyer_id)
         lawyer = db.scalar(stmt)

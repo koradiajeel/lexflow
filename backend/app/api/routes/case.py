@@ -8,6 +8,8 @@ from app.models.case import Case
 from app.models.client import Client
 from app.models.lawyer import Lawyer
 from app.schemas.case import CaseResponse, CaseCreate, CaseUpdate
+from app.api.routes.auth import require_role, get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -16,6 +18,7 @@ router = APIRouter()
 def create_case(
     data: CaseCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner", "Lawyer")),
 ):
     client = db.scalar(select(Client).where(Client.id == data.client_id))
     if client is None:
@@ -41,6 +44,7 @@ def create_case(
 def get_case(
     case_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     case = db.scalar(select(Case).where(Case.id == case_id))
     if case is None:
@@ -53,6 +57,7 @@ def update_case(
     case_id: UUID,
     data: CaseUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner", "Lawyer")),
 ):
     case = db.scalar(select(Case).where(Case.id == case_id))
     if case is None:

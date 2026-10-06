@@ -8,6 +8,8 @@ from app.core.database import get_db
 from app.models.client import Client
 from app.models.law_firm import LawFirm
 from app.schemas.client import ClientResponse, ClientCreate
+from app.api.routes.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -16,6 +18,7 @@ router = APIRouter()
 def create_client(
     data: ClientCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     law_firm = db.scalar(select(LawFirm).where(LawFirm.id == data.law_firm_id))
     if law_firm is None:
@@ -44,6 +47,7 @@ def create_client(
 def get_client(
     client_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     client = db.scalar(select(Client).where(Client.id == client_id))
     if client is None:
