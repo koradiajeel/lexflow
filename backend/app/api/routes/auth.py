@@ -7,6 +7,7 @@ from app.core.security import verify_password, create_access_token
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
 
+
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.security import verify_password, create_access_token, decode_access_token

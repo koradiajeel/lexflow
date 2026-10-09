@@ -5,6 +5,7 @@ from app.api.routes import client
 from app.api.routes import case
 from app.api.routes import user
 from app.api.routes import auth
+from app.api.routes import document
 
 
 app = FastAPI()
@@ -41,4 +42,9 @@ app.include_router(
     auth.router,
       prefix="/auth",
         tags=["auth"]
+    )
+
+app.include_router(\
+    document.router, 
+    tags=["documents"]
     )
