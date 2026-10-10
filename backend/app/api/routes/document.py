@@ -1,7 +1,11 @@
 import uuid
 from uuid import UUID
+from pathlib import Path
 
+from fastapi.responses import FileResponse
+from fastapi import File, UploadFile
 from fastapi import APIRouter, Depends, HTTPException, status
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,10 +16,6 @@ from app.models.document import Document
 from app.models.lawyer import Lawyer
 from app.models.user import User
 from app.schemas.document import DocumentCreate, DocumentResponse
-from pathlib import Path
-
-from fastapi import File, UploadFile
-
 from app.services import storage
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -123,3 +123,41 @@ def get_document(
 
     get_case_for_user(db, document.case_id, current_user)
     return document
+
+
+@router.get("/documents/{document_id}/download")
+def download_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    doc = db.execute(select(Document).where(Document.id == document_id)).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # firm check: reuses your helper, which 404s on a cross-firm case
+    get_case_for_user(db, doc.case_id, current_user)
+
+    path = storage.get_file_path(doc.storage_key)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File missing from storage")
+
+    return FileResponse(path, media_type=doc.content_type, filename=doc.filename)
+
+
+@router.delete("/documents/{document_id}", status_code=204)
+def delete_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner", "Lawyer")),
+):
+    doc = db.execute(select(Document).where(Document.id == document_id)).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    get_case_for_user(db, doc.case_id, current_user)
+
+    storage_key = doc.storage_key
+    db.delete(doc)
+    db.commit()
+    storage.delete_file(storage_key)

@@ -12,6 +12,7 @@ def get_file_path(Storage_key:str)->Path:
 def get_file_path(storage_key:str)->Path:
     return UPLOAD_ROOT/storage_key
 
-def delete_file(storage_key:str)->None:
-    (UPLOAD_ROOT/storage_key).unlink(missing_ok=True)
-    
+def delete_file(storage_key: str) -> None:
+    path = get_file_path(storage_key)
+    if path.exists():
+        path.unlink()
