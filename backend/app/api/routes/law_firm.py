@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 
 from app.models.law_firm import LawFirm
 from app.models.lawyer import Lawyer
 from app.core.database import get_db
-from app.schemas.law_firm import LawFirmCreate, LawFirmResponse
+from app.schemas.law_firm import LawFirmResponse
 from app.models.client import Client
 from app.models.case import Case
 from app.models.user import User
@@ -16,35 +15,6 @@ from app.api.routes.auth import require_role, get_current_user
 from uuid import UUID
 
 router = APIRouter()
-
-
-@router.post(
-    "/",
-    response_model=LawFirmResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def creat_law_firm(
-    data: LawFirmCreate,
-    db: Session = Depends(get_db),
-):
-    law_firm = LawFirm(
-        name=data.name,
-        email=data.email,
-        phone=data.phone,
-        address=data.address,
-    )
-    try:
-        db.add(law_firm)
-        db.commit()
-        db.refresh(law_firm)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="lawfarm with this email already exists",
-        )
-
-    return law_firm
 
 
 @router.get("/{law_firm_id}", response_model=LawFirmResponse)
