@@ -1,18 +1,20 @@
 from pathlib import Path
-UPLOAD_ROOT=Path("upload")
 
-def save_file(storage_key:str,content:bytes)->None:
-    Path=UPLOAD_ROOT / storage_key
-    Path.parent.mkdir(parents=True,exist_ok=True)
-    Path.write_bytes(content)
+# Always D:\lexflow\backend\uploads, no matter where uvicorn is started from
+UPLOAD_ROOT = Path(__file__).resolve().parents[2] / "uploads"
 
-def get_file_path(Storage_key:str)->Path:
-    return UPLOAD_ROOT / Storage_key
 
-def get_file_path(storage_key:str)->Path:
-    return UPLOAD_ROOT/storage_key
+def save_file(storage_key: str, content: bytes) -> None:
+    file_path = UPLOAD_ROOT / storage_key
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(content)
+
+
+def get_file_path(storage_key: str) -> Path:
+    return UPLOAD_ROOT / storage_key
+
 
 def delete_file(storage_key: str) -> None:
-    path = get_file_path(storage_key)
-    if path.exists():
-        path.unlink()
+    file_path = get_file_path(storage_key)
+    if file_path.exists():
+        file_path.unlink()

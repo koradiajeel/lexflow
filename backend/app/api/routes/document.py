@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.routes.auth import get_current_user
+from app.api.routes.auth import get_current_user,require_role
 from app.core.database import get_db
 from app.models.case import Case
 from app.models.document import Document
