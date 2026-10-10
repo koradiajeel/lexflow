@@ -7,3 +7,4 @@ backend/venv/
 .pytest_cache/
 .vscode/
 uploads/
+upload/
