@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.services.file_validation import content_matches_type
 from app.api.routes.auth import get_current_user,require_role
 from app.core.database import get_db
 from app.models.case import Case
@@ -66,9 +67,16 @@ def upload_document(
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="file is empty")
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
+            raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="file is larger than 20 MB",
+        )
+
+    # NEW: check the real bytes match the claimed type
+    if not content_matches_type(content, file.content_type):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="file content does not match its type",
         )
 
     storage_key = f"cases/{case.id}/{uuid.uuid4()}"
