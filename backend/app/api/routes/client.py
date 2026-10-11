@@ -1,40 +1,39 @@
-from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.api.routes.auth import get_current_user, require_role
 from app.core.database import get_db
+from app.models.case import Case
 from app.models.client import Client
-from app.models.law_firm import LawFirm
-from app.schemas.client import ClientResponse, ClientCreate
-from app.api.routes.auth import get_current_user
 from app.models.user import User
+from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
 
 router = APIRouter()
+
+
+def get_client_for_user(db: Session, client_id: UUID, current_user: User) -> Client:
+    """Return the client if it exists AND belongs to the user's firm, else 404."""
+    client = db.scalar(select(Client).where(Client.id == client_id))
+    if client is None or client.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client
 
 
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 def create_client(
     data: ClientCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("Owner", "Lawyer")),
 ):
-    if data.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="you can only create clients in your own law firm",
-        )
-    
-    law_firm = db.scalar(select(LawFirm).where(LawFirm.id == data.law_firm_id))
-    if law_firm is None:
-        raise HTTPException(status_code=404, detail="law firm not found")
-
     client = Client(
-        name=data.name,
-        email=data.email,
-        phone=data.phone,
-        law_firm_id=data.law_firm_id,
+        name=data.name.strip(),
+        email=data.email.strip().lower(),
+        phone=data.phone.strip(),
+        law_firm_id=current_user.law_firm_id,
     )
     db.add(client)
     try:
@@ -43,7 +42,7 @@ def create_client(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="client with this email or phone already exists",
+            detail="A client with this email or phone already exists",
         )
     db.refresh(client)
     return client
@@ -55,11 +54,52 @@ def get_client(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    client = db.scalar(select(Client).where(Client.id == client_id))
-    if client is None:
-        raise HTTPException(status_code=404, detail="client not found")
+    return get_client_for_user(db, client_id, current_user)
 
-    if client.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="client not found")
 
+@router.patch("/{client_id}", response_model=ClientResponse)
+def update_client(
+    client_id: UUID,
+    data: ClientUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner", "Lawyer")),
+):
+    client = get_client_for_user(db, client_id, current_user)
+
+    changes = data.model_dump(exclude_unset=True)
+    if changes.get("email") is not None:
+        changes["email"] = changes["email"].strip().lower()
+
+    for field, value in changes.items():
+        if value is not None:
+            setattr(client, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A client with this email or phone already exists",
+        )
+    db.refresh(client)
     return client
+
+
+@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_client(
+    client_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
+):
+    client = get_client_for_user(db, client_id, current_user)
+
+    has_cases = db.scalar(select(Case.id).where(Case.client_id == client_id)) is not None
+    if has_cases:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete client: existing cases reference this client",
+        )
+
+    db.delete(client)
+    db.commit()

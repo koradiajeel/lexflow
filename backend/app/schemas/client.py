@@ -11,8 +11,7 @@ class ClientBase(BaseModel):
 
 
 class ClientCreate(ClientBase):
-    law_firm_id: UUID
-
+    pass  # law_firm_id comes from the logged-in user's token
 
 class ClientUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=225)
