@@ -12,11 +12,10 @@ class LawFirmCreate(LawFirmBase):
     pass 
 
 class LawFirmUpdate(BaseModel):
-    name: str | None = Field(
-        default=None,
-        min_length=2,
-        max_length=100,
-    )
+    name: str | None = Field(default=None, min_length=2, max_length=225)
+    email: str | None = Field(default=None, min_length=3, max_length=226)
+    phone: str | None = Field(default=None, min_length=5, max_length=20)
+    address: str | None = Field(default=None, min_length=1, max_length=500)
 
 class LawFirmResponse(LawFirmBase):
     id:UUID

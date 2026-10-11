@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, status, HTTPException
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.models.law_firm import LawFirm
 from app.models.lawyer import Lawyer
 from app.core.database import get_db
-from app.schemas.law_firm import LawFirmResponse
+from app.schemas.law_firm import LawFirmResponse,LawFirmUpdate
 from app.models.client import Client
 from app.models.case import Case
 from app.models.user import User
@@ -32,6 +33,40 @@ def get_law_firm(
     if law_firm is None:
         raise HTTPException(status_code=404, detail="law firm is not found")
 
+    return law_firm
+
+@router.patch("/{law_firm_id}", response_model=LawFirmResponse)
+def update_law_firm(
+    law_firm_id: UUID,
+    data: LawFirmUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
+):
+    if law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Law firm not found")
+
+    law_firm = db.scalar(select(LawFirm).where(LawFirm.id == law_firm_id))
+    if law_firm is None:
+        raise HTTPException(status_code=404, detail="Law firm not found")
+
+    changes = data.model_dump(exclude_unset=True)
+    if changes.get("email") is not None:
+        changes["email"] = changes["email"].strip().lower()
+
+    for field, value in changes.items():
+        if value is not None:
+            setattr(law_firm, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A law firm with this email already exists",
+        )
+
+    db.refresh(law_firm)
     return law_firm
 
 
