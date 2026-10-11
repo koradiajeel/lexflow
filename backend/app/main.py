@@ -17,8 +17,8 @@ app.include_router(
 )
 app.include_router(
     lawyer.router,
-    prefix="/Lawyers",
-    tags= ["Lawyer"]
+    prefix="/lawyers",
+    tags=["lawyers"]
 )
 
 app.include_router(

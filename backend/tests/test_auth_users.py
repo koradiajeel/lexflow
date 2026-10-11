@@ -200,7 +200,7 @@ def test_f2_other_firm_cannot_see_case(client):
     token_y, _ = register(client)
 
     lawyer = client.post(
-        "/Lawyers/",
+        "/lawyers/",
         json={"name": "Test Lawyer", "email": unique("lawyer"), "phone": unique_phone(), "law_firm_id": firm_x},
         headers=auth(token_x),
     )

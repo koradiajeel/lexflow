@@ -1,94 +1,90 @@
-from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.api.routes.auth import get_current_user, require_role
 from app.core.database import get_db
-from app.models.lawyer import Lawyer
-from app.schemas.lawyer import LawyerResponse, LawyerCreate,LawyerUpdate
 from app.models.case import Case
-from app.api.routes.auth import require_role
+from app.models.lawyer import Lawyer
 from app.models.user import User
-from app.api.routes.auth import require_role, get_current_user
+from app.schemas.lawyer import LawyerCreate, LawyerResponse, LawyerUpdate
+
+router = APIRouter()
 
 
+def get_lawyer_for_user(db: Session, lawyer_id: UUID, current_user: User) -> Lawyer:
+    """Return the lawyer if it exists AND belongs to the user's firm, else 404."""
+    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == lawyer_id))
+    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Lawyer not found")
+    return lawyer
 
-router =APIRouter()
 
-@router.post("/",
-             response_model=LawyerResponse,
-             status_code=status.HTTP_201_CREATED,
-             )
+@router.post("/", response_model=LawyerResponse, status_code=status.HTTP_201_CREATED)
 def create_lawyer(
-    data:LawyerCreate,
-    db:Session=Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    data: LawyerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
 ):
-    if data.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="you can only create lawyers in your own law firm",
-        )    
-    lawyer=Lawyer(
-        name=data.name,
-        email=data.email,
-        phone=data.phone,
-        law_firm_id=data.law_firm_id,
-
+    lawyer = Lawyer(
+        name=data.name.strip(),
+        email=data.email.strip().lower(),
+        phone=data.phone.strip(),
+        law_firm_id=current_user.law_firm_id,
     )
     db.add(lawyer)
-    db.commit()
-    db.refresh(lawyer)
-
-    return lawyer
-
-@router.get("/{lawyer_id}",response_model=LawyerResponse)
-def get_lawyer(
-    lawyer_id:UUID,
-    db:Session=Depends(get_db),
-    current_user: User = Depends(get_current_user),
-
-):
-    stmt=select(Lawyer).where(Lawyer.id==lawyer_id)
-    lawyer=db.scalar(stmt)
-    if lawyer.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="lawyer not found")
-    if lawyer is None:
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
         raise HTTPException(
-            status_code=404,
-            detail="laywer not found"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A lawyer with this email or phone already exists",
         )
+    db.refresh(lawyer)
     return lawyer
 
-@router.patch("/{lawyer_id}",response_model=LawyerResponse)
+
+@router.get("/{lawyer_id}", response_model=LawyerResponse)
+def get_lawyer(
+    lawyer_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_lawyer_for_user(db, lawyer_id, current_user)
+
+
+@router.patch("/{lawyer_id}", response_model=LawyerResponse)
 def update_lawyer(
     lawyer_id: UUID,
-    data:LawyerUpdate,
-    db:Session=Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    data: LawyerUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
 ):
-    stmt=select(Lawyer).where(Lawyer.id == lawyer_id)
-    lawyer=db.scalar(stmt)
-    if lawyer.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="lawyer not found")
-    if lawyer is None:
+    lawyer = get_lawyer_for_user(db, lawyer_id, current_user)
+
+    changes = data.model_dump(exclude_unset=True)
+    if "email" in changes and changes["email"] is not None:
+        changes["email"] = changes["email"].strip().lower()
+
+    for field, value in changes.items():
+        if value is not None:
+            setattr(lawyer, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
         raise HTTPException(
-            status_code=404,
-            detail="lawyer not found"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A lawyer with this email or phone already exists",
         )
-    if data.name is not None:
-        lawyer.name=data.name
-
-    if data.email is not None:
-        lawyer.email=data.email
-
-    if data.phone is not None:
-        lawyer.phone=data.phone
-
-    db.commit()
     db.refresh(lawyer)
-
     return lawyer
+
 
 @router.delete("/{lawyer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_lawyer(
@@ -96,27 +92,14 @@ def delete_lawyer(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("Owner")),
 ):
-        stmt = select(Lawyer).where(Lawyer.id == lawyer_id)
-        lawyer = db.scalar(stmt)
-        if lawyer.law_firm_id != current_user.law_firm_id:
-            raise HTTPException(status_code=404, detail="lawyer not found")
+    lawyer = get_lawyer_for_user(db, lawyer_id, current_user)
 
-        if lawyer is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Lawyer not found"
-            )
-        has_cases=db.scalar(
-            select(Case.id).where(Case.lawyer_id==lawyer_id)
-        )is not None
+    has_cases = db.scalar(select(Case.id).where(Case.lawyer_id == lawyer_id)) is not None
+    if has_cases:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete lawyer: existing cases reference this lawyer",
+        )
 
-        if has_cases:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="cannot delete lawyer:existing cases reference this layer",
-            )
-
-        db.delete(lawyer)
-        db.commit()
-
-        return
+    db.delete(lawyer)
+    db.commit()
