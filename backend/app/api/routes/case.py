@@ -1,17 +1,58 @@
-from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.api.routes.auth import get_current_user, require_role
 from app.core.database import get_db
 from app.models.case import Case
 from app.models.client import Client
+from app.models.enums import CaseStatus
 from app.models.lawyer import Lawyer
-from app.schemas.case import CaseResponse, CaseCreate, CaseUpdate
-from app.api.routes.auth import require_role, get_current_user
 from app.models.user import User
+from app.schemas.case import CaseCreate, CaseResponse, CaseUpdate
 
 router = APIRouter()
+
+
+def get_case_in_firm(db: Session, case_id: UUID, current_user: User) -> Case:
+    """Return the case if it exists AND its lawyer belongs to the user's firm, else 404."""
+    case = db.scalar(select(Case).where(Case.id == case_id))
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
+    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@router.get("/", response_model=list[CaseResponse])
+def list_cases(
+    status_filter: CaseStatus | None = Query(default=None, alias="status"),
+    client_id: UUID | None = None,
+    lawyer_id: UUID | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stmt = (
+        select(Case)
+        .join(Lawyer, Case.lawyer_id == Lawyer.id)
+        .where(Lawyer.law_firm_id == current_user.law_firm_id)
+    )
+
+    if status_filter is not None:
+        stmt = stmt.where(Case.status == status_filter)
+    if client_id is not None:
+        stmt = stmt.where(Case.client_id == client_id)
+    if lawyer_id is not None:
+        stmt = stmt.where(Case.lawyer_id == lawyer_id)
+
+    stmt = stmt.order_by(Case.created_at.desc()).limit(limit).offset(offset)
+    return db.scalars(stmt).all()
 
 
 @router.post("/", response_model=CaseResponse, status_code=status.HTTP_201_CREATED)
@@ -21,25 +62,16 @@ def create_case(
     current_user: User = Depends(require_role("Owner", "Lawyer")),
 ):
     client = db.scalar(select(Client).where(Client.id == data.client_id))
-    if client is None:
-        raise HTTPException(status_code=404, detail="client not found")
+    if client is None or client.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Client not found")
 
     lawyer = db.scalar(select(Lawyer).where(Lawyer.id == data.lawyer_id))
-    if lawyer is None:
-        raise HTTPException(status_code=404, detail="lawyer not found")
-
-    if (
-        lawyer.law_firm_id != current_user.law_firm_id
-        or client.law_firm_id != current_user.law_firm_id
-    ):
-        raise HTTPException(
-            status_code=404,
-            detail="client or lawyer not found",
-        )    
+    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+        raise HTTPException(status_code=404, detail="Lawyer not found")
 
     case = Case(
-        title=data.title,
-        description=data.description,
+        title=data.title.strip(),
+        description=data.description.strip(),
         client_id=data.client_id,
         lawyer_id=data.lawyer_id,
     )
@@ -55,15 +87,7 @@ def get_case(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    case = db.scalar(select(Case).where(Case.id == case_id))
-    if case is None:
-        raise HTTPException(status_code=404, detail="case not found")
-
-    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
-    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="case not found")
-
-    return case
+    return get_case_in_firm(db, case_id, current_user)
 
 
 @router.patch("/{case_id}", response_model=CaseResponse)
@@ -73,17 +97,11 @@ def update_case(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("Owner", "Lawyer")),
 ):
-    case = db.scalar(select(Case).where(Case.id == case_id))
-    if case is None:
-        raise HTTPException(status_code=404, detail="case not found")
-
-    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
-    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="case not found")
+    case = get_case_in_firm(db, case_id, current_user)
 
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(case, field, value)
 
     db.commit()
     db.refresh(case)
-    return case 
+    return case
