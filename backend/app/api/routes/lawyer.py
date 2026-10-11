@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -47,6 +47,21 @@ def create_lawyer(
     db.refresh(lawyer)
     return lawyer
 
+@router.get("/", response_model=list[LawyerResponse])
+def list_lawyers(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stmt = (
+        select(Lawyer)
+        .where(Lawyer.law_firm_id == current_user.law_firm_id)
+        .order_by(Lawyer.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return db.scalars(stmt).all()
 
 @router.get("/{lawyer_id}", response_model=LawyerResponse)
 def get_lawyer(

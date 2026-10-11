@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -47,6 +47,22 @@ def create_client(
     db.refresh(client)
     return client
 
+
+@router.get("/", response_model=list[ClientResponse])
+def list_clients(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stmt = (
+        select(Client)
+        .where(Client.law_firm_id == current_user.law_firm_id)
+        .order_by(Client.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return db.scalars(stmt).all()
 
 @router.get("/{client_id}", response_model=ClientResponse)
 def get_client(

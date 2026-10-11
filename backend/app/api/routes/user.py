@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status , Query
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -10,6 +10,23 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 
 router = APIRouter()
+
+@router.get("/", response_model=list[UserResponse])
+def list_users(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
+):
+    stmt = (
+        select(User)
+        .where(User.law_firm_id == current_user.law_firm_id)
+        .order_by(User.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return db.scalars(stmt).all()
+
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
