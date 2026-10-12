@@ -162,7 +162,7 @@ button {
   color: var(--green);
 }
 
-/* ---------- Connection test page ---------- */
+/* ---------- Page layout and auth pages ---------- */
 
 .page-center {
   min-height: 100vh;
@@ -171,15 +171,6 @@ button {
   justify-content: center;
   padding: 24px 16px;
   background: var(--blue-softer);
-}
-
-.test-card {
-  width: 100%;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 32px;
 }
 
 .logo {
@@ -205,4 +196,81 @@ button {
   margin-top: 4px;
   color: var(--muted);
   font-size: 14px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+}
+
+.auth-card-wide {
+  max-width: 560px;
+}
+
+.auth-title {
+  margin-top: 24px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section-title {
+  margin-top: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--blue);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.hint {
+  margin-top: -8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.link-button:hover {
+  color: var(--blue-dark);
+  text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+  .auth-card {
+    padding: 24px 20px;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
 }

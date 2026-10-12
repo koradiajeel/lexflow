@@ -52,7 +52,9 @@ Rules:
   (Bearer token, JSON header unless FormData, clears token on 401, throws Error with `detail` + `status`, null on 204).
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
-- `frontend/src/App.jsx`: temporary styled "Test backend" card (calls `/auth/me`). Replace when routing arrives.
+- `frontend/src/App.jsx`: simple `page` state switcher (login / register / home) - replace with react-router in step 3.
+- `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `HomePage` (temporary: shows `/auth/me`, Sign out).
+- `frontend/src/components/Logo.jsx`: shared logo.
 
 ## Design system (white + blue)
 - All theme colors are CSS variables in `frontend/src/index.css`: `--blue`, `--blue-dark`, `--blue-soft`,
