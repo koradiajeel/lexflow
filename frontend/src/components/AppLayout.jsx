@@ -1,18 +1,12 @@
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useAuth } from "../auth/useAuth";
 import Logo from "./Logo";
 
 // Frame for every logged-in page: top bar + the page below it.
 function AppLayout() {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const onCasePage = pathname.startsWith("/cases/");
-
-  function handleSignOut() {
-    signOut();
-    navigate("/login", { replace: true });
-  }
 
   return (
     <div className="app-shell">
@@ -40,9 +34,12 @@ function AppLayout() {
           </nav>
         </div>
         <div className="topbar-user">
-          <span className="topbar-email">{user.email}</span>
+          <NavLink to="/account" className="topbar-email" title="My account">
+            <span className="topbar-email-full">{user.email}</span>
+            <span className="topbar-email-short">Account</span>
+          </NavLink>
           <span className="badge">{user.role}</span>
-          <button type="button" className="btn btn-outline btn-sm" onClick={handleSignOut}>
+          <button type="button" className="btn btn-outline btn-sm" onClick={signOut}>
             Sign out
           </button>
         </div>

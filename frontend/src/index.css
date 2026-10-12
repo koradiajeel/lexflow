@@ -332,6 +332,8 @@ button {
 }
 
 .topbar-email {
+  padding: 6px 10px;
+  border-radius: 999px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -348,6 +350,16 @@ button {
 .btn-danger:hover:not(:disabled) {
   background: var(--red-soft);
   border-color: var(--red);
+}
+
+.topbar-email-short {
+  display: none;
+}
+
+.topbar-email:hover,
+.topbar-email.active {
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .btn-sm {
@@ -372,8 +384,12 @@ button {
     padding: 12px 16px;
   }
 
-  .topbar-email {
+  .topbar-email-full {
     display: none;
+  }
+
+  .topbar-email-short {
+    display: inline;
   }
 
   .app-content {
@@ -929,5 +945,38 @@ button {
     order: 3;
     width: 100%;
     overflow-x: auto;
+  }
+}
+
+/* ---------- Lawyer logins, My account, My cases ---------- */
+
+.badge-success {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.modal-intro {
+  font-size: 14px;
+}
+
+.cases-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.account-form {
+  margin-top: 20px;
+  max-width: 520px;
+}
+
+.account-hint {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .cases-filters {
+    width: 100%;
   }
 }

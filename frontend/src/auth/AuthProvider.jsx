@@ -5,6 +5,9 @@ import { AuthContext } from "./authContext";
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // { id, email, role, law_firm_id } from /auth/me
   const [loading, setLoading] = useState(Boolean(getToken())); // only wait if there is a token to check
+  // True after clicking "Sign out", so the next login starts at the dashboard
+  // instead of the page the previous user was on.
+  const [signedOut, setSignedOut] = useState(false);
 
   // On app start: if a token is saved, ask the backend who it belongs to.
   useEffect(() => {
@@ -22,18 +25,20 @@ function AuthProvider({ children }) {
   const signIn = useCallback(async (token) => {
     setToken(token);
     const me = await apiFetch("/auth/me");
+    setSignedOut(false);
     setUser(me);
     return me;
   }, []);
 
   const signOut = useCallback(() => {
     clearToken();
+    setSignedOut(true);
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, signIn, signOut }),
-    [user, loading, signIn, signOut],
+    () => ({ user, loading, signedOut, signIn, signOut }),
+    [user, loading, signedOut, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

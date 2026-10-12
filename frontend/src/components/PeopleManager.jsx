@@ -15,9 +15,10 @@ function formatDate(value) {
 }
 
 // One list page for "people" records. Used by ClientsPage and LawyersPage.
-// config: { title, singular, endpoint, description, limits }
+// config: { title, singular, endpoint, description, limits, extraColumn? }
+// extraColumn: { header, render(item, { reload, showMessage }) } adds one more column.
 function PeopleManager({ config }) {
-  const { title, singular, endpoint, description, limits } = config;
+  const { title, singular, endpoint, description, limits, extraColumn } = config;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -55,6 +56,8 @@ function PeopleManager({ config }) {
 
   const loading = result.key !== requestKey;
   const closeForm = useCallback(() => setEditing(null), []);
+  const reload = useCallback(() => setReloadCount((n) => n + 1), []);
+  const showMessage = useCallback((text) => setMessage({ type: "success", text }), []);
 
   function goToPage(newPage) {
     setSearchParams(newPage === 1 ? {} : { page: String(newPage) });
@@ -72,7 +75,7 @@ function PeopleManager({ config }) {
     if (isNew && page !== 1) {
       goToPage(1); // new records appear first (newest first)
     } else {
-      setReloadCount((n) => n + 1);
+      reload();
     }
   }
 
@@ -87,7 +90,7 @@ function PeopleManager({ config }) {
       setMessage({ type: "success", text: `Deleted ${item.name}.` });
       // If that was the last item on this page, go back one page.
       if (result.items.length === 1 && page > 1) goToPage(page - 1);
-      else setReloadCount((n) => n + 1);
+      else reload();
     } catch (err) {
       setMessage({ type: "error", text: err.message }); // e.g. 409 "existing cases reference..."
     } finally {
@@ -134,6 +137,7 @@ function PeopleManager({ config }) {
               <th>Email</th>
               <th>Phone</th>
               <th>Added</th>
+              {extraColumn && <th>{extraColumn.header}</th>}
               <th className="col-actions">
                 <span className="visually-hidden">Actions</span>
               </th>
@@ -148,6 +152,11 @@ function PeopleManager({ config }) {
                 <td data-label="Email">{item.email}</td>
                 <td data-label="Phone">{item.phone}</td>
                 <td data-label="Added">{formatDate(item.created_at)}</td>
+                {extraColumn && (
+                  <td data-label={extraColumn.header}>
+                    {extraColumn.render(item, { reload, showMessage })}
+                  </td>
+                )}
                 <td className="col-actions">
                   <div className="row-actions">
                     <button

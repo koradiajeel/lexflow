@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
+import { useAuth } from "../auth/useAuth";
 import StatusBadge from "../components/StatusBadge";
 
 const PAGE_SIZE = 10;
@@ -20,11 +21,15 @@ function namesById(items) {
 }
 
 function DashboardPage() {
-  // Filter and page live in the URL (?status=Open&page=2), so refresh and Back keep them.
+  const { user } = useAuth();
+  const myLawyerId = user.lawyer_id; // set only when this login is linked to a lawyer profile
+
+  // Filters and page live in the URL (?mine=1&status=Open&page=2), so refresh and Back keep them.
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") || "All";
+  const mine = Boolean(myLawyerId) && searchParams.get("mine") === "1";
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
-  const requestKey = `${status}|${page}`;
+  const requestKey = `${mine}|${status}|${page}`;
 
   const [result, setResult] = useState({ key: null, cases: [], hasNext: false, error: "" });
   const [names, setNames] = useState({ clients: {}, lawyers: {} });
@@ -46,6 +51,7 @@ function DashboardPage() {
       offset: String((page - 1) * PAGE_SIZE),
     });
     if (status !== "All") params.set("status", status);
+    if (mine) params.set("lawyer_id", myLawyerId);
 
     apiFetch(`/cases/?${params}`)
       .then((cases) => {
@@ -65,12 +71,16 @@ function DashboardPage() {
     return () => {
       ignore = true;
     };
-  }, [status, page, requestKey]);
+  }, [status, page, mine, myLawyerId, requestKey]);
 
   const loading = result.key !== requestKey;
 
-  function changeStatus(newStatus) {
-    setSearchParams(newStatus === "All" ? {} : { status: newStatus });
+  // Changing a filter keeps the other filter and goes back to page 1.
+  function setFilters({ newMine = mine, newStatus = status }) {
+    const next = {};
+    if (newMine) next.mine = "1";
+    if (newStatus !== "All") next.status = newStatus;
+    setSearchParams(next);
   }
 
   function goToPage(newPage) {
@@ -85,21 +95,44 @@ function DashboardPage() {
       <div className="cases-header">
         <div>
           <h1 className="page-title">Cases</h1>
-          <p className="subtitle">All cases in your firm, newest first.</p>
+          <p className="subtitle">
+            {mine ? "Cases assigned to you, newest first." : "All cases in your firm, newest first."}
+          </p>
         </div>
 
-        <div className="filter-tabs" role="group" aria-label="Filter by status">
-          {STATUS_FILTERS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`filter-tab ${status === option ? "active" : ""}`}
-              aria-pressed={status === option}
-              onClick={() => changeStatus(option)}
-            >
-              {option}
-            </button>
-          ))}
+        <div className="cases-filters">
+          {myLawyerId && (
+            <div className="filter-tabs" role="group" aria-label="Whose cases">
+              {[
+                ["All cases", false],
+                ["My cases", true],
+              ].map(([label, value]) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={`filter-tab ${mine === value ? "active" : ""}`}
+                  aria-pressed={mine === value}
+                  onClick={() => setFilters({ newMine: value })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="filter-tabs" role="group" aria-label="Filter by status">
+            {STATUS_FILTERS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`filter-tab ${status === option ? "active" : ""}`}
+                aria-pressed={status === option}
+                onClick={() => setFilters({ newStatus: option })}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -110,6 +143,7 @@ function DashboardPage() {
       {!loading && !result.error && result.cases.length === 0 && (
         <p className="cases-empty">
           {status === "All" ? "No cases yet." : `No ${status.toLowerCase()} cases.`}
+          {mine && " (only cases assigned to you are shown)"}
         </p>
       )}
 
