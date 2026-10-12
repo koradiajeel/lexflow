@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user, require_role
 from app.core.database import get_db
+from app.core.security import hash_password
 from app.models.case import Case
+from app.models.enums import UserRole
 from app.models.lawyer import Lawyer
 from app.models.user import User
-from app.schemas.lawyer import LawyerCreate, LawyerResponse, LawyerUpdate
+from app.schemas.lawyer import LawyerCreate, LawyerLoginCreate, LawyerResponse, LawyerUpdate
 
 router = APIRouter()
 
@@ -89,6 +91,12 @@ def update_lawyer(
         if value is not None:
             setattr(lawyer, field, value)
 
+    # Keep the lawyer's login email the same as their profile email.
+    if lawyer.user_id is not None and changes.get("email") is not None:
+        login = db.scalar(select(User).where(User.id == lawyer.user_id))
+        if login is not None:
+            login.email = lawyer.email
+
     try:
         db.commit()
     except IntegrityError:
@@ -118,3 +126,52 @@ def delete_lawyer(
 
     db.delete(lawyer)
     db.commit()
+
+
+@router.post(
+    "/{lawyer_id}/create-login",
+    response_model=LawyerResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_lawyer_login(
+    lawyer_id: UUID,
+    data: LawyerLoginCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Owner")),
+):
+    """Create a Lawyer login account using the lawyer's email, and link it to the lawyer."""
+    lawyer = get_lawyer_for_user(db, lawyer_id, current_user)
+
+    if lawyer.user_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This lawyer already has a login",
+        )
+
+    email = lawyer.email.strip().lower()
+    if db.scalar(select(User).where(User.email == email)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists",
+        )
+
+    user = User(
+        law_firm_id=current_user.law_firm_id,
+        email=email,
+        hashed_password=hash_password(data.password),
+        role=UserRole.LAWYER,
+    )
+    db.add(user)
+    db.flush()  # gives user.id without committing yet
+    lawyer.user_id = user.id
+
+    try:
+        db.commit()  # user + link are saved together, or neither
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists",
+        )
+    db.refresh(lawyer)
+    return lawyer

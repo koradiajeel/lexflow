@@ -12,7 +12,9 @@ from app.core.security import create_access_token, hash_password
 from app.models.enums import UserRole
 from app.models.law_firm import LawFirm
 from app.models.user import User
-from app.schemas.auth import RegisterRequest
+from app.schemas.auth import ChangePasswordRequest, RegisterRequest
+from app.models.lawyer import Lawyer
+from app.core.security import hash_password
 
 
 from fastapi.security import OAuth2PasswordBearer
@@ -66,13 +68,39 @@ def get_current_user(
 
     return user
 @router.get("/me")
-def read_current_user(current_user: User = Depends(get_current_user)):
+def read_current_user(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # The lawyer profile linked to this login, if any (None for Owner/Staff or unlinked users).
+    lawyer_id = db.scalar(select(Lawyer.id).where(Lawyer.user_id == current_user.id))
     return {
         "id": current_user.id,
         "email": current_user.email,
         "role": current_user.role.value,
         "law_firm_id": current_user.law_firm_id,
+        "lawyer_id": lawyer_id,
     }
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    if data.new_password == data.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current one",
+        )
+    current_user.hashed_password = hash_password(data.new_password)
+    db.commit()
 def require_role(*allowed_roles:str):
       def role_checker(current_user:User=Depends(get_current_user))->User:
           if current_user.role.value not in allowed_roles:

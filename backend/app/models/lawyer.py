@@ -41,6 +41,13 @@ class Lawyer(Base):
         nullable=False
     )
 
+    # Login account for this lawyer (optional). Set by POST /lawyers/{id}/create-login.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        unique=True,
+        nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=func.now(),
