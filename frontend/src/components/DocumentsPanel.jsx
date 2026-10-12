@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, apiFetchBlob } from "../api/client";
+import DocumentPreview from "./DocumentPreview";
 
 const MAX_SIZE = 20 * 1024 * 1024; // same 20 MB limit as the backend
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
+// Types the browser can show by itself. Word files can only be downloaded.
+const PREVIEWABLE = ["application/pdf", "image/png", "image/jpeg"];
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,6 +21,33 @@ function formatDate(value) {
   });
 }
 
+// Start a download from an in-memory file link by clicking a temporary <a download>.
+function saveFile(url, filename) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 // Short label for the file icon, e.g. "PDF" or "DOCX".
 function fileLabel(filename) {
   const ext = filename.includes(".") ? filename.split(".").pop() : "";
@@ -29,6 +59,7 @@ function DocumentsPanel({ caseId }) {
   const [uploading, setUploading] = useState(false);
   const [busyId, setBusyId] = useState(null); // document currently downloading/deleting
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [preview, setPreview] = useState(null); // { doc, url } while the preview popup is open
   const fileInput = useRef(null);
 
   useEffect(() => {
@@ -81,12 +112,8 @@ function DocumentsPanel({ caseId }) {
     setMessage({ type: "", text: "" });
     try {
       const blob = await apiFetchBlob(`/documents/${doc.id}/download`);
-      // Make a temporary link to the file in memory and click it to start the download.
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = doc.filename;
-      link.click();
+      const url = URL.createObjectURL(blob); // temporary in-memory link to the file
+      saveFile(url, doc.filename);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -94,6 +121,26 @@ function DocumentsPanel({ caseId }) {
       setBusyId(null);
     }
   }
+
+  async function handleView(doc) {
+    setBusyId(doc.id);
+    setMessage({ type: "", text: "" });
+    try {
+      const blob = await apiFetchBlob(`/documents/${doc.id}/download`);
+      setPreview({ doc, url: URL.createObjectURL(blob) });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const closePreview = useCallback(() => {
+    setPreview((current) => {
+      if (current) URL.revokeObjectURL(current.url); // free the memory used by the file
+      return null;
+    });
+  }, []);
 
   async function handleDelete(doc) {
     if (!window.confirm(`Delete "${doc.filename}"? This cannot be undone.`)) return;
@@ -162,6 +209,18 @@ function DocumentsPanel({ caseId }) {
                 </span>
               </div>
               <div className="doc-actions">
+                {PREVIEWABLE.includes(doc.content_type) && (
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`View ${doc.filename}`}
+                    title="View"
+                    disabled={busyId === doc.id}
+                    onClick={() => handleView(doc)}
+                  >
+                    <EyeIcon />
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
@@ -182,6 +241,15 @@ function DocumentsPanel({ caseId }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {preview && (
+        <DocumentPreview
+          doc={preview.doc}
+          url={preview.url}
+          onClose={closePreview}
+          onDownload={() => saveFile(preview.url, preview.doc.filename)}
+        />
       )}
     </section>
   );

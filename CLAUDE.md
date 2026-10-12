@@ -63,7 +63,8 @@ Rules:
 - `frontend/src/pages/CaseDetailPage.jsx`: case info + client/lawyer names, status change (PATCH, segmented buttons), renders `DocumentsPanel`.
   Case titles in the dashboard table link here.
 - `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray),
-  `DocumentsPanel.jsx` (list, upload via hidden file input + FormData field `file`, download via blob link, delete with confirm).
+  `DocumentsPanel.jsx` (list, upload via hidden file input + FormData field `file`, download via blob link, delete with confirm,
+  eye button for PDF/PNG/JPEG -> `DocumentPreview.jsx` popup: iframe for PDF, img for images; Esc/backdrop closes; Word = download only).
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
   (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
 
