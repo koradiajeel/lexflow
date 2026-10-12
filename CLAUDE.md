@@ -55,7 +55,7 @@ Rules:
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/dashboard`);
-  `/dashboard`, `/cases/:caseId` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, email, role badge, Sign out); `*` -> `/dashboard`.
+  `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, nav links Cases/Clients/Lawyers via `NavLink`, email, role badge, Sign out); `*` -> `/dashboard`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user`, `loading`, `signIn(token)`, `signOut()`; checks `/auth/me` on start),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
 - `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (case table: status filter tabs + Previous/Next,
@@ -64,7 +64,10 @@ Rules:
   Case titles in the dashboard table link here.
 - `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray),
   `DocumentsPanel.jsx` (list, upload via hidden file input + FormData field `file`, download via blob link, delete with confirm,
-  eye button for PDF/PNG/JPEG -> `DocumentPreview.jsx` popup: iframe for PDF, img for images; Esc/backdrop closes; Word = download only).
+  eye button for PDF/PNG/JPEG -> `DocumentPreview.jsx` popup: iframe for PDF, img for images; Word = download only).
+- `Modal.jsx`: shared popup (title bar, optional `actions`, ✕, Esc and backdrop click close; `wide` for previews). Use it for any new popup.
+- `ClientsPage` / `LawyersPage` are thin configs for `PeopleManager.jsx` (paginated table, Add/Edit in a Modal with `PersonForm.jsx`,
+  Delete with confirm; backend 409s shown as messages). `config.limits` mirrors the backend schema min/max lengths.
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
   (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
 
@@ -73,7 +76,7 @@ Rules:
   `--blue-softer`, `--ink`, `--text`, `--muted`, `--border`, `--bg`, `--red`/`--red-soft`, `--green`/`--green-soft`,
   plus `--radius`, `--shadow-sm`, `--shadow-lg`. Use only these; no new hex colors in components.
 - Font: Plus Jakarta Sans (Google Fonts, loaded in `frontend/index.html`). Light theme only.
-- Reusable classes: `.btn` + `.btn-primary` / `.btn-outline`, `.card`, `.label`, `.input`, `.badge`,
+- Reusable classes: `.btn` + `.btn-primary` / `.btn-outline` / `.btn-danger` (+ `.btn-sm`), `.icon-button`, `.card`, `.label`, `.input`, `.badge`,
   `.alert-error`, `.alert-success`, `.page-center`.
 - Look: modern SaaS style - white background, one blue accent, soft blue tints, rounded corners,
   soft shadows, generous spacing. Must work at 375px phone width with no horizontal scroll.
@@ -81,12 +84,12 @@ Rules:
 
 ## Frontend roadmap
 1. ~~CORS connection test~~ + ~~white/blue theme~~ (done)
-2. Login page and Register page (store token, redirect)  <- next
-3. Routing (react-router) + protected routes + logout
-4. Case list (dashboard): `GET /cases/` with status filter + pagination
-5. Case detail: info, status change, documents (upload via FormData, download, delete)
-6. Clients and Lawyers pages
-7. Users page (Owner only)
+2. ~~Login page and Register page (store token, redirect)~~ (done)
+3. ~~Routing (react-router) + protected routes + logout~~ (done)
+4. ~~Case list (dashboard): `GET /cases/` with status filter + pagination~~ (done)
+5. ~~Case detail: info, status change, documents (upload via FormData, download, delete, in-page preview)~~ (done)
+6. ~~Clients and Lawyers pages~~ (done)
+7. Users page (Owner only)  <- next
 8. Role-based UI (hide actions the role can't do)
 Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
 
@@ -95,7 +98,8 @@ Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
 - Use a separate test database before deployment (tests write `@test.com` data into dev DB).
 - Case list shows client/lawyer names only for the first 100 of each (fetched with `?limit=100`); a firm with more shows "—".
   Better fix later: include `client_name`/`lawyer_name` in `CaseResponse` on the backend.
-- Staff can see status buttons and Delete on documents but the backend returns 403 (shown as an error). Hide them in step 8.
+- Staff can see status buttons, document Delete, and Add/Edit/Delete on clients and lawyers, but the backend returns 403
+  (shown as an error). Lawyers can't write lawyers or delete clients either. Hide these in step 8.
 - Delete `backend/test_db.py` (old psycopg2 script) - still present.
 
 ## Test data
