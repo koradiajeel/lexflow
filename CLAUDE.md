@@ -49,17 +49,23 @@ Rules:
 
 ## Frontend status
 - `frontend/src/api/client.js`: `getToken`, `setToken`, `clearToken`, `apiFetch(path, options)`
-  (Bearer token, JSON header unless FormData, clears token on 401, throws Error with `detail` + `status`, null on 204).
+  (Bearer token, JSON header unless FormData, clears token on 401, throws Error with `detail` + `status`, null on 204),
+  plus `apiFetchBlob(path)` for file downloads (same auth + errors, returns a Blob).
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/dashboard`);
-  `/dashboard` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, email, role badge, Sign out); `*` -> `/dashboard`.
+  `/dashboard`, `/cases/:caseId` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, email, role badge, Sign out); `*` -> `/dashboard`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user`, `loading`, `signIn(token)`, `signOut()`; checks `/auth/me` on start),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
 - `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (case table: status filter tabs + Previous/Next,
   state in URL `?status=&page=`; asks `limit=PAGE_SIZE+1` to know if a next page exists; client/lawyer names from `/clients/` + `/lawyers/` `?limit=100`).
-- `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray).
+- `frontend/src/pages/CaseDetailPage.jsx`: case info + client/lawyer names, status change (PATCH, segmented buttons), renders `DocumentsPanel`.
+  Case titles in the dashboard table link here.
+- `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray),
+  `DocumentsPanel.jsx` (list, upload via hidden file input + FormData field `file`, download via blob link, delete with confirm).
+- Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
+  (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
 
 ## Design system (white + blue)
 - All theme colors are CSS variables in `frontend/src/index.css`: `--blue`, `--blue-dark`, `--blue-soft`,
@@ -88,6 +94,7 @@ Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
 - Use a separate test database before deployment (tests write `@test.com` data into dev DB).
 - Case list shows client/lawyer names only for the first 100 of each (fetched with `?limit=100`); a firm with more shows "—".
   Better fix later: include `client_name`/`lawyer_name` in `CaseResponse` on the backend.
+- Staff can see status buttons and Delete on documents but the backend returns 403 (shown as an error). Hide them in step 8.
 - Delete `backend/test_db.py` (old psycopg2 script) - still present.
 
 ## Test data

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import PublicOnlyRoute from "./auth/PublicOnlyRoute";
 import AppLayout from "./components/AppLayout";
+import CaseDetailPage from "./pages/CaseDetailPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -18,6 +19,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/cases/:caseId" element={<CaseDetailPage />} />
         </Route>
       </Route>
 

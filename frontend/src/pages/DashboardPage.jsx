@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 
@@ -128,7 +128,9 @@ function DashboardPage() {
             {result.cases.map((c) => (
               <tr key={c.id}>
                 <td data-label="Title">
-                  <span className="case-title">{c.title}</span>
+                  <Link to={`/cases/${c.id}`} className="case-title">
+                    {c.title}
+                  </Link>
                 </td>
                 <td data-label="Client">{names.clients[c.client_id] || "—"}</td>
                 <td data-label="Lawyer">{names.lawyers[c.lawyer_id] || "—"}</td>
