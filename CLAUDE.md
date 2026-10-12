@@ -57,8 +57,9 @@ Rules:
   `/dashboard` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, email, role badge, Sign out); `*` -> `/dashboard`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user`, `loading`, `signIn(token)`, `signOut()`; checks `/auth/me` on start),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
-- `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (placeholder for step 4).
-- `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`.
+- `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (case table: status filter tabs + Previous/Next,
+  state in URL `?status=&page=`; asks `limit=PAGE_SIZE+1` to know if a next page exists; client/lawyer names from `/clients/` + `/lawyers/` `?limit=100`).
+- `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray).
 
 ## Design system (white + blue)
 - All theme colors are CSS variables in `frontend/src/index.css`: `--blue`, `--blue-dark`, `--blue-soft`,
@@ -85,6 +86,8 @@ Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
 ## Known follow-ups
 - Client email/phone are unique across the whole DB, not per firm (needs migration).
 - Use a separate test database before deployment (tests write `@test.com` data into dev DB).
+- Case list shows client/lawyer names only for the first 100 of each (fetched with `?limit=100`); a firm with more shows "—".
+  Better fix later: include `client_name`/`lawyer_name` in `CaseResponse` on the backend.
 - Delete `backend/test_db.py` (old psycopg2 script) - still present.
 
 ## Test data
