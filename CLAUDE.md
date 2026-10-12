@@ -52,9 +52,13 @@ Rules:
   (Bearer token, JSON header unless FormData, clears token on 401, throws Error with `detail` + `status`, null on 204).
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
-- `frontend/src/App.jsx`: simple `page` state switcher (login / register / home) - replace with react-router in step 3.
-- `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `HomePage` (temporary: shows `/auth/me`, Sign out).
-- `frontend/src/components/Logo.jsx`: shared logo.
+- Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
+- `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/dashboard`);
+  `/dashboard` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, email, role badge, Sign out); `*` -> `/dashboard`.
+- `frontend/src/auth/`: `AuthProvider.jsx` (`user`, `loading`, `signIn(token)`, `signOut()`; checks `/auth/me` on start),
+  `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
+- `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (placeholder for step 4).
+- `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`.
 
 ## Design system (white + blue)
 - All theme colors are CSS variables in `frontend/src/index.css`: `--blue`, `--blue-dark`, `--blue-soft`,

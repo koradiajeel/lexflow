@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { apiFetch, setToken } from "../api/client";
+import { Link } from "react-router";
+import { apiFetch } from "../api/client";
+import { useAuth } from "../auth/useAuth";
 import Logo from "../components/Logo";
 
-function LoginPage({ onSuccess, onGoToRegister }) {
+function LoginPage() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,8 +23,8 @@ function LoginPage({ onSuccess, onGoToRegister }) {
           password,
         }),
       });
-      setToken(data.access_token);
-      onSuccess();
+      // Saving the user makes PublicOnlyRoute redirect to the dashboard.
+      await signIn(data.access_token);
     } catch (err) {
       if (err.status === 401) {
         setError("Incorrect email or password.");
@@ -84,9 +87,9 @@ function LoginPage({ onSuccess, onGoToRegister }) {
 
         <p className="auth-switch">
           New to LexFlow?{" "}
-          <button type="button" className="link-button" onClick={onGoToRegister}>
+          <Link to="/register" className="link-button">
             Register your firm
-          </button>
+          </Link>
         </p>
       </div>
     </main>

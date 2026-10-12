@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { apiFetch, setToken } from "../api/client";
+import { Link } from "react-router";
+import { apiFetch } from "../api/client";
+import { useAuth } from "../auth/useAuth";
 import Logo from "../components/Logo";
 
 const EMPTY_FORM = {
@@ -12,7 +14,8 @@ const EMPTY_FORM = {
   confirm_password: "",
 };
 
-function RegisterPage({ onSuccess, onGoToLogin }) {
+function RegisterPage() {
+  const { signIn } = useAuth();
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,8 +48,8 @@ function RegisterPage({ onSuccess, onGoToLogin }) {
           password: form.password,
         }),
       });
-      setToken(data.access_token);
-      onSuccess();
+      // Saving the user makes PublicOnlyRoute redirect to the dashboard.
+      await signIn(data.access_token);
     } catch (err) {
       if (err.status === 422) {
         setError("Some fields are invalid. Please check the form and try again.");
@@ -200,9 +203,9 @@ function RegisterPage({ onSuccess, onGoToLogin }) {
 
         <p className="auth-switch">
           Already have an account?{" "}
-          <button type="button" className="link-button" onClick={onGoToLogin}>
+          <Link to="/login" className="link-button">
             Sign in
-          </button>
+          </Link>
         </p>
       </div>
     </main>

@@ -1,24 +1,29 @@
-import { useCallback, useState } from "react";
-import { getToken } from "./api/client";
-import HomePage from "./pages/HomePage";
+import { Navigate, Route, Routes } from "react-router";
+import ProtectedRoute from "./auth/ProtectedRoute";
+import PublicOnlyRoute from "./auth/PublicOnlyRoute";
+import AppLayout from "./components/AppLayout";
+import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
-// Simple page switcher until react-router is added (roadmap step 3).
+// The map of URLs -> pages.
 function App() {
-  const [page, setPage] = useState(getToken() ? "home" : "login");
+  return (
+    <Routes>
+      <Route element={<PublicOnlyRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
 
-  const goToLogin = useCallback(() => setPage("login"), []);
-  const goToRegister = useCallback(() => setPage("register"), []);
-  const goToHome = useCallback(() => setPage("home"), []);
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Route>
+      </Route>
 
-  if (page === "home") {
-    return <HomePage onLogout={goToLogin} />;
-  }
-  if (page === "register") {
-    return <RegisterPage onSuccess={goToHome} onGoToLogin={goToLogin} />;
-  }
-  return <LoginPage onSuccess={goToHome} onGoToRegister={goToRegister} />;
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
 }
 
 export default App;

@@ -1,0 +1,11 @@
+import { useContext } from "react";
+import { AuthContext } from "./authContext";
+
+// Use in any component: const { user, signIn, signOut } = useAuth();
+export function useAuth() {
+  const auth = useContext(AuthContext);
+  if (!auth) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+  return auth;
+}
