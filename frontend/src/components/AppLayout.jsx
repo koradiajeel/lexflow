@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../auth/useAuth";
 import Logo from "./Logo";
 
@@ -6,6 +6,8 @@ import Logo from "./Logo";
 function AppLayout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const onCasePage = pathname.startsWith("/cases/");
 
   function handleSignOut() {
     signOut();
@@ -15,9 +17,28 @@ function AppLayout() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link to="/dashboard" aria-label="LexFlow home">
-          <Logo />
-        </Link>
+        <div className="topbar-left">
+          <Link to="/dashboard" aria-label="LexFlow home">
+            <Logo />
+          </Link>
+          {/* NavLink adds the "active" class when its page is open */}
+          <nav className="topnav" aria-label="Main">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `topnav-link ${isActive || onCasePage ? "active" : ""}`
+              }
+            >
+              Cases
+            </NavLink>
+            <NavLink to="/clients" className="topnav-link">
+              Clients
+            </NavLink>
+            <NavLink to="/lawyers" className="topnav-link">
+              Lawyers
+            </NavLink>
+          </nav>
+        </div>
         <div className="topbar-user">
           <span className="topbar-email">{user.email}</span>
           <span className="badge">{user.role}</span>
