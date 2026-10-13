@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
 import Modal from "./Modal";
+import Pagination from "./Pagination";
 import PersonForm from "./PersonForm";
 
 const PAGE_SIZE = 10;
@@ -186,26 +187,8 @@ function PeopleManager({ config }) {
         </table>
       )}
 
-      {!loading && (page > 1 || result.hasNext) && (
-        <div className="pagination">
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            disabled={page === 1}
-            onClick={() => goToPage(page - 1)}
-          >
-            Previous
-          </button>
-          <span className="pagination-label">Page {page}</span>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            disabled={!result.hasNext}
-            onClick={() => goToPage(page + 1)}
-          >
-            Next
-          </button>
-        </div>
+      {!loading && (
+        <Pagination page={page} hasNext={result.hasNext} onChange={goToPage} />
       )}
 
       {editing && (

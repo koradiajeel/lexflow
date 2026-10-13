@@ -31,6 +31,11 @@ function AppLayout() {
             <NavLink to="/lawyers" className="topnav-link">
               Lawyers
             </NavLink>
+            {user.role === "Owner" && (
+              <NavLink to="/users" className="topnav-link">
+                Users
+              </NavLink>
+            )}
           </nav>
         </div>
         <div className="topbar-user">

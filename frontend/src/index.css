@@ -980,3 +980,29 @@ button {
     width: 100%;
   }
 }
+
+/* ---------- Users page ---------- */
+
+.you-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gray-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.role-owner {
+  background: var(--blue);
+  color: var(--bg);
+}
+
+.badge.role-staff {
+  background: var(--gray-soft);
+  color: var(--text);
+}
+
+.users-denied {
+  margin-top: 16px;
+}

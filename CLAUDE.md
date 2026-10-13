@@ -59,7 +59,7 @@ Rules:
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/dashboard`);
-  `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, nav links Cases/Clients/Lawyers via `NavLink`, email = link to /account ("Account" on phones), role badge, Sign out); `*` -> `/dashboard`.
+  `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, nav links Cases/Clients/Lawyers (+ Users for Owner only) via `NavLink`, email = link to /account ("Account" on phones), role badge, Sign out); `*` -> `/dashboard`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user` incl. `lawyer_id`, `loading`, `signedOut`, `signIn(token)`, `signOut()`; checks `/auth/me` on start;
   after a deliberate sign-out `ProtectedRoute` doesn't remember the last page, so the next user starts at /dashboard),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
@@ -75,6 +75,9 @@ Rules:
   Delete with confirm; backend 409s shown as messages). `config.limits` mirrors the backend schema min/max lengths.
   Optional `config.extraColumn` adds a column: LawyersPage uses it for `CreateLoginButton.jsx` ("Has login" badge or Create login popup).
 - `AccountPage.jsx` (/account): email, role, linked lawyer profile + "View my cases", change password form.
+- `UsersPage.jsx` (/users, Owner only; others see a message and the page doesn't call the API): paginated logins with role badge,
+  linked lawyer name (from `/lawyers/` `user_id`), "You" tag; "+ Add staff" popup -> `POST /users/` role Staff.
+- `Pagination.jsx`: shared Previous / Page N / Next (hidden when only one page). Used by Dashboard, PeopleManager, Users.
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
   (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
 
@@ -96,8 +99,8 @@ Rules:
 4. ~~Case list (dashboard): `GET /cases/` with status filter + pagination~~ (done)
 5. ~~Case detail: info, status change, documents (upload via FormData, download, delete, in-page preview)~~ (done)
 6. ~~Clients and Lawyers pages~~ (done)
-7. Users page (Owner only): list all logins, create **Staff** logins (lawyer logins are created from the Lawyers page)  <- next
-8. Role-based UI (hide actions the role can't do)
+7. ~~Users page (Owner only): list all logins, create **Staff** logins (lawyer logins are created from the Lawyers page)~~ (done)
+8. Role-based UI (hide actions the role can't do)  <- next
 Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
 
 ## Known follow-ups

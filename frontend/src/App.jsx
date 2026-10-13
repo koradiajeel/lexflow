@@ -9,6 +9,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LawyersPage from "./pages/LawyersPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import UsersPage from "./pages/UsersPage";
 
 // The map of URLs -> pages.
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/lawyers" element={<LawyersPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/users" element={<UsersPage />} />
         </Route>
       </Route>
 
