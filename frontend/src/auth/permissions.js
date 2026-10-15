@@ -2,6 +2,7 @@
 // buttons that will actually work. The backend still enforces every rule (403 otherwise);
 // this file just keeps people from clicking things that would fail.
 const RULES = {
+  "case.create": ["Owner", "Lawyer"], // POST /cases/
   "case.update": ["Owner", "Lawyer"], // change status (PATCH /cases/{id})
   "document.delete": ["Owner", "Lawyer"], // DELETE /documents/{id} (upload/download: everyone)
   "client.create": ["Owner", "Lawyer"],

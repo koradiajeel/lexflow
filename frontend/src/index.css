@@ -1015,3 +1015,19 @@ button {
   padding-bottom: 0;
   border-bottom: none;
 }
+
+/* ---------- New case form ---------- */
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+select.input {
+  cursor: pointer;
+}
+
+.char-count {
+  text-align: right;
+}

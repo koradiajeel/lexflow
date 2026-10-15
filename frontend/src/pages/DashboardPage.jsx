@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
+import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
+import Modal from "../components/Modal";
+import NewCaseForm from "../components/NewCaseForm";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
 
@@ -34,14 +37,21 @@ function DashboardPage() {
 
   const [result, setResult] = useState({ key: null, cases: [], hasNext: false, error: "" });
   const [names, setNames] = useState({ clients: {}, lawyers: {} });
+  // Full lists for the New case dropdowns (null until loaded).
+  const [lists, setLists] = useState({ clients: null, lawyers: null });
+  const [creating, setCreating] = useState(false);
+  const canCreate = can(user, "case.create");
+  const navigate = useNavigate();
+  const closeForm = useCallback(() => setCreating(false), []);
 
   // Load client and lawyer names once, to show names instead of IDs in the table.
   useEffect(() => {
     Promise.all([apiFetch("/clients/?limit=100"), apiFetch("/lawyers/?limit=100")])
-      .then(([clients, lawyers]) =>
-        setNames({ clients: namesById(clients), lawyers: namesById(lawyers) }),
-      )
-      .catch(() => {}); // names are a nice extra; the table still works without them
+      .then(([clients, lawyers]) => {
+        setNames({ clients: namesById(clients), lawyers: namesById(lawyers) });
+        setLists({ clients, lawyers });
+      })
+      .catch(() => setLists({ clients: [], lawyers: [] })); // the table still works without names
   }, []);
 
   // Load one page of cases whenever the filter or page changes.
@@ -102,6 +112,11 @@ function DashboardPage() {
         </div>
 
         <div className="cases-filters">
+          {canCreate && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
+              + New case
+            </button>
+          )}
           {myLawyerId && (
             <div className="filter-tabs" role="group" aria-label="Whose cases">
               {[
@@ -181,6 +196,18 @@ function DashboardPage() {
 
       {!loading && (
         <Pagination page={page} hasNext={result.hasNext} onChange={goToPage} />
+      )}
+
+      {creating && (
+        <Modal title="New case" onClose={closeForm}>
+          <NewCaseForm
+            clients={lists.clients}
+            lawyers={lists.lawyers}
+            defaultLawyerId={myLawyerId}
+            onCreated={(created) => navigate(`/cases/${created.id}`)}
+            onCancel={closeForm}
+          />
+        </Modal>
       )}
     </div>
   );

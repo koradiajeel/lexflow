@@ -78,8 +78,11 @@ Rules:
 - `UsersPage.jsx` (/users, Owner only; others see a message and the page doesn't call the API): paginated logins with role badge,
   linked lawyer name (from `/lawyers/` `user_id`), "You" tag; "+ Add staff" popup -> `POST /users/` role Staff.
 - `Pagination.jsx`: shared Previous / Page N / Next (hidden when only one page). Used by Dashboard, PeopleManager, Users.
+- `NewCaseForm.jsx`: opened from the dashboard's "+ New case" (permission `case.create`) in a Modal; title, description
+  (textarea + counter), client and lawyer dropdowns (lists from the dashboard's `?limit=100` fetch; signed-in lawyer
+  pre-selected); explains if no clients/lawyers exist; on success navigates to `/cases/<new id>`.
 - Role-based UI: `frontend/src/auth/permissions.js` has `can(user, "action")` with one RULES table mirroring the backend
-  `require_role` checks (`case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
+  `require_role` checks (`case.create`, `case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
   `user.manage`). Pages hide buttons the role can't use; PeopleManager takes `config.permissions` and `extraColumn.permission`.
   When a backend permission changes, update RULES too. The backend still enforces everything (403).
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
@@ -105,8 +108,9 @@ Rules:
 6. ~~Clients and Lawyers pages~~ (done)
 7. ~~Users page (Owner only): list all logins, create **Staff** logins (lawyer logins are created from the Lawyers page)~~ (done)
 8. ~~Role-based UI (hide actions the role can't do)~~ (done)
-Next (not started, pick one): create cases from the UI (`POST /cases/` form: title, description, client, lawyer) |
-README with screenshots | Docker | deployment. Later: S3 storage, monitoring.
+9. ~~New case form (`+ New case` on the dashboard, Owner + Lawyer)~~ (done)
+Next (not started, pick one): README with screenshots | edit case title/description on the case page | Docker | deployment.
+Later: S3 storage, monitoring.
 
 ## Known follow-ups
 - Client email/phone are unique across the whole DB, not per firm (needs migration).
@@ -116,7 +120,7 @@ README with screenshots | Docker | deployment. Later: S3 storage, monitoring.
 - Lawyer-role users created earlier via `POST /users/` (e.g. Firm A's) aren't linked to a lawyer profile; create-login
   returns 409 for their email. Could add a "link existing account" option later.
 - Deleting a lawyer keeps their login account (link becomes NULL). Decide later whether to also remove/disable the login.
-- There is no UI to create a case yet (only the API / seed script). Natural next feature.
+- New case dropdowns only list the first 100 clients/lawyers (same `?limit=100` fetch as the table names).
 - Delete `backend/test_db.py` (old psycopg2 script) - still present.
 
 ## Test data
