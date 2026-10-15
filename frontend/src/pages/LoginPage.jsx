@@ -5,7 +5,7 @@ import { useAuth } from "../auth/useAuth";
 import Logo from "../components/Logo";
 
 function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, sessionExpired } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -46,6 +46,10 @@ function LoginPage() {
           <h1 className="auth-title">Welcome back</h1>
           <p className="subtitle">Sign in to manage your firm's cases.</p>
         </div>
+
+        {sessionExpired && (
+          <p className="alert-info">Your session expired. Please sign in again.</p>
+        )}
 
         <form className="form" onSubmit={handleSubmit}>
           <div>

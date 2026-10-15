@@ -55,6 +55,9 @@ Rules:
 - `frontend/src/api/client.js`: `getToken`, `setToken`, `clearToken`, `apiFetch(path, options)`
   (Bearer token, JSON header unless FormData, clears token on 401, throws Error with `detail` + `status`, null on 204),
   plus `apiFetchBlob(path)` for file downloads (same auth + errors, returns a Blob).
+  A 401 on a request that carried a token calls the handler set via `setUnauthorizedHandler()`; AuthProvider uses it to
+  sign the user out with `sessionExpired = true` -> ProtectedRoute sends them to /login (remembering the page) and
+  LoginPage shows "Your session expired". A 401 without a token (wrong password) doesn't trigger it.
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
@@ -74,7 +77,9 @@ Rules:
 - `ClientsPage` / `LawyersPage` are thin configs for `PeopleManager.jsx` (paginated table, Add/Edit in a Modal with `PersonForm.jsx`,
   Delete with confirm; backend 409s shown as messages). `config.limits` mirrors the backend schema min/max lengths.
   Optional `config.extraColumn` adds a column: LawyersPage uses it for `CreateLoginButton.jsx` ("Has login" badge or Create login popup).
-- `AccountPage.jsx` (/account): email, role, linked lawyer profile + "View my cases", change password form.
+- `AccountPage.jsx` (/account): email, role, linked lawyer profile + "View my cases", `FirmCard.jsx` ("Your firm": everyone
+  sees name/email/phone/address from `GET /law-firms/{law_firm_id}`; Owner gets Edit -> PATCH), change password form.
+- `CaseDetailPage` has "Edit details" (permission `case.update`) -> `EditCaseForm.jsx` popup (title + description, PATCH).
 - `UsersPage.jsx` (/users, Owner only; others see a message and the page doesn't call the API): paginated logins with role badge,
   linked lawyer name (from `/lawyers/` `user_id`), "You" tag; "+ Add staff" popup -> `POST /users/` role Staff.
 - `Pagination.jsx`: shared Previous / Page N / Next (hidden when only one page). Used by Dashboard, PeopleManager, Users.
@@ -83,7 +88,7 @@ Rules:
   pre-selected); explains if no clients/lawyers exist; on success navigates to `/cases/<new id>`.
 - Role-based UI: `frontend/src/auth/permissions.js` has `can(user, "action")` with one RULES table mirroring the backend
   `require_role` checks (`case.create`, `case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
-  `user.manage`). Pages hide buttons the role can't use; PeopleManager takes `config.permissions` and `extraColumn.permission`.
+  `firm.update`, `user.manage`). Pages hide buttons the role can't use; PeopleManager takes `config.permissions` and `extraColumn.permission`.
   When a backend permission changes, update RULES too. The backend still enforces everything (403).
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
   (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
@@ -94,7 +99,7 @@ Rules:
   plus `--radius`, `--shadow-sm`, `--shadow-lg`. Use only these; no new hex colors in components.
 - Font: Plus Jakarta Sans (Google Fonts, loaded in `frontend/index.html`). Light theme only.
 - Reusable classes: `.btn` + `.btn-primary` / `.btn-outline` / `.btn-danger` (+ `.btn-sm`), `.icon-button`, `.card`, `.label`, `.input`, `.badge`,
-  `.alert-error`, `.alert-success`, `.page-center`.
+  `.alert-error`, `.alert-success`, `.alert-info`, `.page-center`, `.textarea`.
 - Look: modern SaaS style - white background, one blue accent, soft blue tints, rounded corners,
   soft shadows, generous spacing. Must work at 375px phone width with no horizontal scroll.
 - No fake marketing content (made-up customer counts, stats, testimonials).
@@ -109,7 +114,8 @@ Rules:
 7. ~~Users page (Owner only): list all logins, create **Staff** logins (lawyer logins are created from the Lawyers page)~~ (done)
 8. ~~Role-based UI (hide actions the role can't do)~~ (done)
 9. ~~New case form (`+ New case` on the dashboard, Owner + Lawyer)~~ (done)
-Next (not started, pick one): README with screenshots | edit case title/description on the case page | Docker | deployment.
+10. ~~Polish: expired-session handling, edit case details, firm settings~~ (done)
+Next (not started, pick one): README with screenshots | Docker | deployment (needs production `VITE_API_URL` + CORS origin).
 Later: S3 storage, monitoring.
 
 ## Known follow-ups

@@ -12,6 +12,7 @@ const RULES = {
   "lawyer.update": ["Owner"],
   "lawyer.delete": ["Owner"],
   "lawyer.createLogin": ["Owner"],
+  "firm.update": ["Owner"], // PATCH /law-firms/{id} (everyone can view their own firm)
   "user.manage": ["Owner"], // Users page: list logins, add staff
 };
 

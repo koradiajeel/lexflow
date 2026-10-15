@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { apiFetch } from "../api/client";
 import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
 import DocumentsPanel from "../components/DocumentsPanel";
+import EditCaseForm from "../components/EditCaseForm";
+import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 
 const STATUSES = ["Open", "In Progress", "Closed"];
@@ -23,6 +25,9 @@ function CaseDetailPage() {
   const [state, setState] = useState({ key: null, data: null, client: null, lawyer: null, error: "" });
   const [saving, setSaving] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
+  const closeEdit = useCallback(() => setEditing(false), []);
 
   // Load the case, then its client and lawyer (for their names).
   useEffect(() => {
@@ -83,8 +88,21 @@ function CaseDetailPage() {
             <div className="detail-title-row">
               <h1 className="page-title">{c.title}</h1>
               <StatusBadge status={c.status} />
+              {canChangeStatus && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm detail-edit"
+                  onClick={() => {
+                    setSavedMessage("");
+                    setEditing(true);
+                  }}
+                >
+                  Edit details
+                </button>
+              )}
             </div>
             <p className="detail-description">{c.description}</p>
+            {savedMessage && <p className="alert-success detail-saved">{savedMessage}</p>}
 
             <dl className={`detail-grid ${canChangeStatus ? "" : "detail-grid-last"}`}>
               <div>
@@ -126,6 +144,20 @@ function CaseDetailPage() {
           </section>
 
           <DocumentsPanel caseId={caseId} />
+
+          {editing && (
+            <Modal title="Edit case" onClose={closeEdit}>
+              <EditCaseForm
+                caseData={c}
+                onSaved={(updated) => {
+                  setState((prev) => ({ ...prev, data: updated }));
+                  setEditing(false);
+                  setSavedMessage("Case details saved.");
+                }}
+                onCancel={closeEdit}
+              />
+            </Modal>
+          )}
         </>
       )}
     </div>

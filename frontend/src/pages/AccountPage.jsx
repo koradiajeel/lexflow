@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../auth/useAuth";
+import FirmCard from "../components/FirmCard";
 
 function ChangePasswordForm() {
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
@@ -128,12 +129,14 @@ function AccountPage() {
   }, [lawyerId]);
 
   const lawyer = profile.key === lawyerId ? profile.data : null;
+  const hasFooter = Boolean(lawyerId) || user.role === "Lawyer"; // "View my cases" or the unlinked hint
 
   return (
     <div className="detail-stack">
       <section className="card">
         <h1 className="page-title">My account</h1>
-        <dl className="detail-grid">
+        {/* Drop the bottom divider when nothing follows the details (Owner/Staff without a lawyer profile). */}
+        <dl className={`detail-grid ${hasFooter ? "" : "detail-grid-last"}`}>
           <div>
             <dt>Email</dt>
             <dd>{user.email}</dd>
@@ -164,6 +167,8 @@ function AccountPage() {
           </p>
         )}
       </section>
+
+      <FirmCard />
 
       <section className="card">
         <h2 className="section-title">Change password</h2>
