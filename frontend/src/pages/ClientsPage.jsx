@@ -7,6 +7,7 @@ const CLIENTS = {
   endpoint: "/clients/",
   description: "People and companies your firm represents.",
   limits: { name: [2, 225], phone: [1, 20] },
+  permissions: { create: "client.create", update: "client.update", delete: "client.delete" },
 };
 
 function ClientsPage() {

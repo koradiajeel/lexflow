@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, apiFetchBlob } from "../api/client";
+import { can } from "../auth/permissions";
+import { useAuth } from "../auth/useAuth";
 import DocumentPreview from "./DocumentPreview";
 
 const MAX_SIZE = 20 * 1024 * 1024; // same 20 MB limit as the backend
@@ -55,6 +57,8 @@ function fileLabel(filename) {
 }
 
 function DocumentsPanel({ caseId }) {
+  const { user } = useAuth();
+  const canDelete = can(user, "document.delete"); // everyone can upload, view and download
   const [state, setState] = useState({ key: null, documents: [], error: "" });
   const [uploading, setUploading] = useState(false);
   const [busyId, setBusyId] = useState(null); // document currently downloading/deleting
@@ -229,14 +233,16 @@ function DocumentsPanel({ caseId }) {
                 >
                   Download
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  disabled={busyId === doc.id}
-                  onClick={() => handleDelete(doc)}
-                >
-                  Delete
-                </button>
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    disabled={busyId === doc.id}
+                    onClick={() => handleDelete(doc)}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </li>
           ))}

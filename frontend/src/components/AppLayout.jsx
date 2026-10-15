@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
 import Logo from "./Logo";
 
@@ -31,7 +32,7 @@ function AppLayout() {
             <NavLink to="/lawyers" className="topnav-link">
               Lawyers
             </NavLink>
-            {user.role === "Owner" && (
+            {can(user, "user.manage") && (
               <NavLink to="/users" className="topnav-link">
                 Users
               </NavLink>

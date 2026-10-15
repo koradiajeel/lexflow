@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
+import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
 import Modal from "../components/Modal";
 import Pagination from "../components/Pagination";
@@ -124,7 +125,7 @@ function AddStaffForm({ onCreated, onCancel }) {
 
 function UsersPage() {
   const { user: me } = useAuth();
-  const isOwner = me.role === "Owner";
+  const isOwner = can(me, "user.manage");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get("page")) || 1);

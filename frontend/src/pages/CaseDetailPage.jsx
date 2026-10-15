@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { apiFetch } from "../api/client";
+import { can } from "../auth/permissions";
+import { useAuth } from "../auth/useAuth";
 import DocumentsPanel from "../components/DocumentsPanel";
 import StatusBadge from "../components/StatusBadge";
 
@@ -16,6 +18,8 @@ function formatDate(value) {
 
 function CaseDetailPage() {
   const { caseId } = useParams(); // the :caseId part of /cases/:caseId
+  const { user } = useAuth();
+  const canChangeStatus = can(user, "case.update"); // Staff can only look
   const [state, setState] = useState({ key: null, data: null, client: null, lawyer: null, error: "" });
   const [saving, setSaving] = useState(false);
   const [statusError, setStatusError] = useState("");
@@ -82,7 +86,7 @@ function CaseDetailPage() {
             </div>
             <p className="detail-description">{c.description}</p>
 
-            <dl className="detail-grid">
+            <dl className={`detail-grid ${canChangeStatus ? "" : "detail-grid-last"}`}>
               <div>
                 <dt>Client</dt>
                 <dd>{state.client ? state.client.name : "—"}</dd>
@@ -99,24 +103,26 @@ function CaseDetailPage() {
               </div>
             </dl>
 
-            <div className="status-changer">
-              <span className="label">Change status</span>
-              <div className="filter-tabs" role="group" aria-label="Change status">
-                {STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`filter-tab ${c.status === s ? "active" : ""}`}
-                    aria-pressed={c.status === s}
-                    disabled={saving}
-                    onClick={() => changeStatus(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
+            {canChangeStatus && (
+              <div className="status-changer">
+                <span className="label">Change status</span>
+                <div className="filter-tabs" role="group" aria-label="Change status">
+                  {STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`filter-tab ${c.status === s ? "active" : ""}`}
+                      aria-pressed={c.status === s}
+                      disabled={saving}
+                      onClick={() => changeStatus(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                {statusError && <p className="alert-error">{statusError}</p>}
               </div>
-              {statusError && <p className="alert-error">{statusError}</p>}
-            </div>
+            )}
           </section>
 
           <DocumentsPanel caseId={caseId} />

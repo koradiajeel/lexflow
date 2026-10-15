@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { apiFetch } from "../api/client";
+import { can } from "../auth/permissions";
+import { useAuth } from "../auth/useAuth";
 import Modal from "./Modal";
 import Pagination from "./Pagination";
 import PersonForm from "./PersonForm";
@@ -16,10 +18,18 @@ function formatDate(value) {
 }
 
 // One list page for "people" records. Used by ClientsPage and LawyersPage.
-// config: { title, singular, endpoint, description, limits, extraColumn? }
-// extraColumn: { header, render(item, { reload, showMessage }) } adds one more column.
+// config: { title, singular, endpoint, description, limits, permissions, extraColumn? }
+// permissions: { create, update, delete } -> names from auth/permissions.js; buttons the
+//   user's role can't use are hidden.
+// extraColumn: { header, permission?, render(item, { reload, showMessage }) } adds one more column.
 function PeopleManager({ config }) {
-  const { title, singular, endpoint, description, limits, extraColumn } = config;
+  const { title, singular, endpoint, description, limits, permissions, extraColumn } = config;
+  const { user } = useAuth();
+  const canCreate = can(user, permissions.create);
+  const canUpdate = can(user, permissions.update);
+  const canDelete = can(user, permissions.delete);
+  const showActions = canUpdate || canDelete;
+  const showExtra = Boolean(extraColumn) && (!extraColumn.permission || can(user, extraColumn.permission));
 
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -106,16 +116,18 @@ function PeopleManager({ config }) {
           <h1 className="page-title">{title}</h1>
           <p className="subtitle">{description}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
-          onClick={() => {
-            setMessage({ type: "", text: "" });
-            setEditing({});
-          }}
-        >
-          + Add {singular.toLowerCase()}
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              setMessage({ type: "", text: "" });
+              setEditing({});
+            }}
+          >
+            + Add {singular.toLowerCase()}
+          </button>
+        )}
       </div>
 
       {message.text && (
@@ -138,10 +150,12 @@ function PeopleManager({ config }) {
               <th>Email</th>
               <th>Phone</th>
               <th>Added</th>
-              {extraColumn && <th>{extraColumn.header}</th>}
-              <th className="col-actions">
-                <span className="visually-hidden">Actions</span>
-              </th>
+              {showExtra && <th>{extraColumn.header}</th>}
+              {showActions && (
+                <th className="col-actions">
+                  <span className="visually-hidden">Actions</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -153,34 +167,40 @@ function PeopleManager({ config }) {
                 <td data-label="Email">{item.email}</td>
                 <td data-label="Phone">{item.phone}</td>
                 <td data-label="Added">{formatDate(item.created_at)}</td>
-                {extraColumn && (
+                {showExtra && (
                   <td data-label={extraColumn.header}>
                     {extraColumn.render(item, { reload, showMessage })}
                   </td>
                 )}
-                <td className="col-actions">
-                  <div className="row-actions">
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      disabled={busyId === item.id}
-                      onClick={() => {
-                        setMessage({ type: "", text: "" });
-                        setEditing(item);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      disabled={busyId === item.id}
-                      onClick={() => handleDelete(item)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+                {showActions && (
+                  <td className="col-actions">
+                    <div className="row-actions">
+                      {canUpdate && (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          disabled={busyId === item.id}
+                          onClick={() => {
+                            setMessage({ type: "", text: "" });
+                            setEditing(item);
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          disabled={busyId === item.id}
+                          onClick={() => handleDelete(item)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -78,6 +78,10 @@ Rules:
 - `UsersPage.jsx` (/users, Owner only; others see a message and the page doesn't call the API): paginated logins with role badge,
   linked lawyer name (from `/lawyers/` `user_id`), "You" tag; "+ Add staff" popup -> `POST /users/` role Staff.
 - `Pagination.jsx`: shared Previous / Page N / Next (hidden when only one page). Used by Dashboard, PeopleManager, Users.
+- Role-based UI: `frontend/src/auth/permissions.js` has `can(user, "action")` with one RULES table mirroring the backend
+  `require_role` checks (`case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
+  `user.manage`). Pages hide buttons the role can't use; PeopleManager takes `config.permissions` and `extraColumn.permission`.
+  When a backend permission changes, update RULES too. The backend still enforces everything (403).
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`
   (avoids sync setState in effects, which the react-hooks lint rule flags); use an `ignore` flag against stale replies.
 
@@ -100,19 +104,19 @@ Rules:
 5. ~~Case detail: info, status change, documents (upload via FormData, download, delete, in-page preview)~~ (done)
 6. ~~Clients and Lawyers pages~~ (done)
 7. ~~Users page (Owner only): list all logins, create **Staff** logins (lawyer logins are created from the Lawyers page)~~ (done)
-8. Role-based UI (hide actions the role can't do)  <- next
-Later: Docker, deployment, README with screenshots, S3 storage, monitoring.
+8. ~~Role-based UI (hide actions the role can't do)~~ (done)
+Next (not started, pick one): create cases from the UI (`POST /cases/` form: title, description, client, lawyer) |
+README with screenshots | Docker | deployment. Later: S3 storage, monitoring.
 
 ## Known follow-ups
 - Client email/phone are unique across the whole DB, not per firm (needs migration).
 - Use a separate test database before deployment (tests write `@test.com` data into dev DB).
 - Case list shows client/lawyer names only for the first 100 of each (fetched with `?limit=100`); a firm with more shows "—".
   Better fix later: include `client_name`/`lawyer_name` in `CaseResponse` on the backend.
-- Staff can see status buttons, document Delete, and Add/Edit/Delete on clients and lawyers, but the backend returns 403
-  (shown as an error). Lawyers can't write lawyers or delete clients either. Hide these in step 8.
 - Lawyer-role users created earlier via `POST /users/` (e.g. Firm A's) aren't linked to a lawyer profile; create-login
   returns 409 for their email. Could add a "link existing account" option later.
 - Deleting a lawyer keeps their login account (link becomes NULL). Decide later whether to also remove/disable the login.
+- There is no UI to create a case yet (only the API / seed script). Natural next feature.
 - Delete `backend/test_db.py` (old psycopg2 script) - still present.
 
 ## Test data

@@ -1006,3 +1006,12 @@ button {
 .users-denied {
   margin-top: 16px;
 }
+
+/* ---------- Role-based UI ---------- */
+
+/* Case card without the "Change status" section below the details (Staff). */
+.detail-grid-last {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
