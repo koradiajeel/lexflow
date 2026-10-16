@@ -1,13 +1,12 @@
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { can } from "../auth/permissions";
+import { Link, NavLink, Outlet } from "react-router";
 import { useAuth } from "../auth/useAuth";
 import Logo from "./Logo";
 
 // Frame for every logged-in page: top bar + the page below it.
+// Sections (Cases, Clients, Lawyers, Users...) are opened from the tiles on Home,
+// so the top bar only needs a way back there.
 function AppLayout() {
   const { user, signOut } = useAuth();
-  const { pathname } = useLocation();
-  const onCasePage = pathname.startsWith("/cases/");
 
   return (
     <div className="app-shell">
@@ -21,25 +20,6 @@ function AppLayout() {
             <NavLink to="/home" className="topnav-link">
               Home
             </NavLink>
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `topnav-link ${isActive || onCasePage ? "active" : ""}`
-              }
-            >
-              Cases
-            </NavLink>
-            <NavLink to="/clients" className="topnav-link">
-              Clients
-            </NavLink>
-            <NavLink to="/lawyers" className="topnav-link">
-              Lawyers
-            </NavLink>
-            {can(user, "user.manage") && (
-              <NavLink to="/users" className="topnav-link">
-                Users
-              </NavLink>
-            )}
           </nav>
         </div>
         <div className="topbar-user">

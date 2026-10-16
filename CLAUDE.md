@@ -65,7 +65,7 @@ Rules:
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/home`);
-  `/home`, `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo -> /home, nav links Home/Cases/Clients/Lawyers (+ Users for Owner only) via `NavLink`, email = link to /account ("Account" on phones), role badge (hidden on phones), Sign out); `*` -> `/home`.
+  `/home`, `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo -> /home, one `Home` NavLink (hidden on phones; sections are opened from the Home tiles, not the top bar), email = link to /account ("Account" on phones), role badge (hidden on phones), Sign out); `*` -> `/home`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user` incl. `lawyer_id`, `loading`, `signedOut`, `signIn(token)`, `signOut()`; checks `/auth/me` on start;
   after a deliberate sign-out `ProtectedRoute` doesn't remember the last page, so the next user starts at /dashboard),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.

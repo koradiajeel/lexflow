@@ -945,20 +945,11 @@ button {
   }
 }
 
-/* Small screens: logo row on top, page links below it. */
-@media (max-width: 760px) {
-  .topbar {
-    flex-wrap: wrap;
-  }
-
-  .topbar-left {
-    display: contents;
-  }
-
+/* Phones: the logo already links to Home, so drop the separate Home link
+   and keep the top bar on one row. */
+@media (max-width: 640px) {
   .topnav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
+    display: none;
   }
 }
 
