@@ -9,3 +9,4 @@ backend/venv/
 uploads/
 upload/
 CLAUDE.local.md
+*.local.md
