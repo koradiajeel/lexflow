@@ -5,7 +5,8 @@ import { apiFetch } from "../api/client";
 // Form for POST /cases/. Length rules match backend/app/schemas/case.py.
 // clients / lawyers: lists for the dropdowns (null while still loading).
 // defaultLawyerId: pre-selects the signed-in lawyer, if any.
-function NewCaseForm({ clients, lawyers, defaultLawyerId, onCreated, onCancel }) {
+// onlySelf: a Lawyer may only create cases assigned to themselves, so the choice is fixed.
+function NewCaseForm({ clients, lawyers: allLawyers, defaultLawyerId, onlySelf, onCreated, onCancel }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -14,6 +15,9 @@ function NewCaseForm({ clients, lawyers, defaultLawyerId, onCreated, onCancel })
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const lawyers =
+    allLawyers && onlySelf ? allLawyers.filter((l) => l.id === defaultLawyerId) : allLawyers;
 
   if (!clients || !lawyers) {
     return <p className="cases-empty">Loading clients and lawyers...</p>;
@@ -147,6 +151,7 @@ function NewCaseForm({ clients, lawyers, defaultLawyerId, onCreated, onCancel })
             name="lawyer_id"
             className="input"
             required
+            disabled={onlySelf}
             value={form.lawyer_id}
             onChange={handleChange}
           >
@@ -160,6 +165,7 @@ function NewCaseForm({ clients, lawyers, defaultLawyerId, onCreated, onCancel })
               </option>
             ))}
           </select>
+          {onlySelf && <p className="hint-inline">Cases you create are assigned to you.</p>}
         </div>
       </div>
 

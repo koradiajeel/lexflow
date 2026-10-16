@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { apiFetch } from "../api/client";
+import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
 import FirmCard from "../components/FirmCard";
 
@@ -156,7 +157,10 @@ function AccountPage() {
           )}
         </dl>
         {lawyerId && (
-          <Link to="/dashboard?mine=1" className="btn btn-outline btn-sm">
+          <Link
+            to={can(user, "case.viewAll") ? "/dashboard?mine=1" : "/dashboard"}
+            className="btn btn-outline btn-sm"
+          >
             View my cases
           </Link>
         )}

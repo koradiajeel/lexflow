@@ -26,7 +26,7 @@ Learning + portfolio project by a B.Tech AI & Data Science student: build it lik
 - `requirements.txt`: use `python -m pip freeze | Out-File -Encoding utf8 requirements.txt` (not `>`, it writes UTF-16).
 - npm works normally. Vite may run on 5174 if 5173 is busy.
 
-## Backend API (54 passing tests)
+## Backend API (65 passing tests)
 | Area | Routes | Who |
 |---|---|---|
 | Auth | `POST /auth/register` (firm + Owner, returns token), `POST /auth/login` (JSON), `GET /auth/me` (incl. `lawyer_id`), `POST /auth/change-password` | public / any |
@@ -34,12 +34,15 @@ Learning + portfolio project by a B.Tech AI & Data Science student: build it lik
 | Law firms | `GET/PATCH/DELETE /law-firms/{id}` | GET any; write Owner |
 | Lawyers | `GET /lawyers/`, `POST /lawyers/`, `GET/PATCH/DELETE /lawyers/{id}`, `POST /lawyers/{id}/create-login` | GET any; write Owner |
 | Clients | `GET /clients/`, `POST /clients/`, `GET/PATCH/DELETE /clients/{id}` | GET any; create/update Owner+Lawyer; delete Owner |
-| Cases | `GET /cases/` (`status`, `client_id`, `lawyer_id`, `limit` 1-100, `offset`), `POST /cases/`, `GET/PATCH /cases/{id}` | GET any; write Owner+Lawyer |
+| Cases | `GET /cases/` (`status`, `client_id`, `lawyer_id`, `limit` 1-100, `offset`), `POST /cases/`, `GET/PATCH /cases/{id}` | GET any (Lawyer: own cases only); write Owner+Lawyer |
 | Documents | `POST/GET /cases/{id}/documents`, `GET /documents/{id}`, `GET /documents/{id}/download`, `DELETE /documents/{id}` | upload/download any; delete Owner+Lawyer |
 
 Rules:
 - JWT payload: `sub` (user UUID), `law_firm_id`, `role`. Roles `Owner` / `Lawyer` / `Staff` (case-sensitive).
 - Firm isolation: every query limited to `current_user.law_firm_id`; other firm's record -> 404. A case's firm comes from its lawyer.
+- Case visibility (`app/services/case_access.py`, used by case AND document routes): Owner/Staff see every case in the firm;
+  a **Lawyer sees only cases assigned to their own lawyer profile** (`lawyers.user_id == user.id`); other cases and their
+  documents -> 404. Unlinked Lawyer logins see no cases. A Lawyer may only create cases assigned to themselves (else 403).
 - `law_firm_id` is never accepted from the request body.
 - Lawyer profile vs login: `lawyers` (name/email/phone, assigned to cases) and `users` (email/password/role, for login) are
   separate tables linked by optional `lawyers.user_id` (unique FK, ON DELETE SET NULL; migration `a7c3e91b4d20`).
@@ -49,7 +52,7 @@ Rules:
 - Upload: 20 MB max, pdf/png/jpeg/doc/docx, magic-byte check (`app/services/file_validation.py`),
   stored in `backend/uploads/cases/<case_id>/<uuid>` (git-ignored).
 - Errors: `{"detail": "..."}`; 401 no/expired token, 403 wrong role, 404 not found/other firm, 409 conflict, 415 bad file type, 422 validation.
-- Tests: `tests/test_auth_users.py`, `tests/test_permissions.py`, `tests/test_lawyer_login.py`. Must keep passing after any backend change.
+- Tests: `tests/test_auth_users.py`, `tests/test_permissions.py`, `tests/test_lawyer_login.py`, `tests/test_case_visibility.py`. Must keep passing after any backend change.
 
 ## Frontend status
 - `frontend/src/api/client.js`: `getToken`, `setToken`, `clearToken`, `apiFetch(path, options)`
@@ -67,7 +70,7 @@ Rules:
   after a deliberate sign-out `ProtectedRoute` doesn't remember the last page, so the next user starts at /dashboard),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
 - `frontend/src/pages/`: `LoginPage`, `RegisterPage` (firm + Owner), `DashboardPage` (case table: status filter tabs + Previous/Next,
-  state in URL `?mine=1&status=&page=`; "All cases / My cases" toggle only when `user.lawyer_id` (adds `lawyer_id=` filter); asks `limit=PAGE_SIZE+1` to know if a next page exists; client/lawyer names from `/clients/` + `/lawyers/` `?limit=100`).
+  state in URL `?mine=1&status=&page=`; "All cases / My cases" toggle only for roles with `case.viewAll` that also have a `lawyer_id` (Lawyers get only their own cases from the API, so no toggle); asks `limit=PAGE_SIZE+1` to know if a next page exists; client/lawyer names from `/clients/` + `/lawyers/` `?limit=100`).
 - `frontend/src/pages/CaseDetailPage.jsx`: case info + client/lawyer names, status change (PATCH, segmented buttons), renders `DocumentsPanel`.
   Case titles in the dashboard table link here.
 - `frontend/src/components/`: `Logo.jsx`, `AppLayout.jsx`, `StatusBadge.jsx` (Open blue, In Progress amber, Closed gray),
@@ -85,9 +88,10 @@ Rules:
 - `Pagination.jsx`: shared Previous / Page N / Next (hidden when only one page). Used by Dashboard, PeopleManager, Users.
 - `NewCaseForm.jsx`: opened from the dashboard's "+ New case" (permission `case.create`) in a Modal; title, description
   (textarea + counter), client and lawyer dropdowns (lists from the dashboard's `?limit=100` fetch; signed-in lawyer
-  pre-selected); explains if no clients/lawyers exist; on success navigates to `/cases/<new id>`.
+  pre-selected; for a Lawyer (`onlySelf`, no `case.assignAnyLawyer`) the lawyer select is fixed to themselves);
+  explains if no clients/lawyers exist; on success navigates to `/cases/<new id>`.
 - Role-based UI: `frontend/src/auth/permissions.js` has `can(user, "action")` with one RULES table mirroring the backend
-  `require_role` checks (`case.create`, `case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
+  `require_role` checks (`case.viewAll`, `case.create`, `case.assignAnyLawyer`, `case.update`, `document.delete`, `client.create/update/delete`, `lawyer.create/update/delete/createLogin`,
   `firm.update`, `user.manage`). Pages hide buttons the role can't use; PeopleManager takes `config.permissions` and `extraColumn.permission`.
   When a backend permission changes, update RULES too. The backend still enforces everything (403).
 - Pattern for loading data in effects: store `{ key, ...data }` in state and derive `loading = state.key !== currentKey`

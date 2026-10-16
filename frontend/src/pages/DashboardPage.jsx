@@ -27,11 +27,14 @@ function namesById(items) {
 function DashboardPage() {
   const { user } = useAuth();
   const myLawyerId = user.lawyer_id; // set only when this login is linked to a lawyer profile
+  // Owner/Staff see every case and may narrow to "My cases"; the backend only ever
+  // sends a Lawyer the cases assigned to them, so they get no toggle.
+  const seesAll = can(user, "case.viewAll");
 
   // Filters and page live in the URL (?mine=1&status=Open&page=2), so refresh and Back keep them.
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") || "All";
-  const mine = Boolean(myLawyerId) && searchParams.get("mine") === "1";
+  const mine = seesAll && Boolean(myLawyerId) && searchParams.get("mine") === "1";
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const requestKey = `${mine}|${status}|${page}`;
 
@@ -40,7 +43,8 @@ function DashboardPage() {
   // Full lists for the New case dropdowns (null until loaded).
   const [lists, setLists] = useState({ clients: null, lawyers: null });
   const [creating, setCreating] = useState(false);
-  const canCreate = can(user, "case.create");
+  const canCreate =
+    can(user, "case.create") && (can(user, "case.assignAnyLawyer") || Boolean(myLawyerId));
   const navigate = useNavigate();
   const closeForm = useCallback(() => setCreating(false), []);
 
@@ -107,7 +111,9 @@ function DashboardPage() {
         <div>
           <h1 className="page-title">Cases</h1>
           <p className="subtitle">
-            {mine ? "Cases assigned to you, newest first." : "All cases in your firm, newest first."}
+            {mine || !seesAll
+              ? "Cases assigned to you, newest first."
+              : "All cases in your firm, newest first."}
           </p>
         </div>
 
@@ -117,7 +123,7 @@ function DashboardPage() {
               + New case
             </button>
           )}
-          {myLawyerId && (
+          {seesAll && myLawyerId && (
             <div className="filter-tabs" role="group" aria-label="Whose cases">
               {[
                 ["All cases", false],
@@ -159,7 +165,8 @@ function DashboardPage() {
       {!loading && !result.error && result.cases.length === 0 && (
         <p className="cases-empty">
           {status === "All" ? "No cases yet." : `No ${status.toLowerCase()} cases.`}
-          {mine && " (only cases assigned to you are shown)"}
+          {(mine || !seesAll) && " Only cases assigned to you are shown."}
+          {!seesAll && !myLawyerId && " Your login isn't linked to a lawyer profile yet; ask your firm's Owner."}
         </p>
       )}
 
@@ -204,6 +211,7 @@ function DashboardPage() {
             clients={lists.clients}
             lawyers={lists.lawyers}
             defaultLawyerId={myLawyerId}
+            onlySelf={!can(user, "case.assignAnyLawyer")}
             onCreated={(created) => navigate(`/cases/${created.id}`)}
             onCancel={closeForm}
           />
