@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { apiFetch } from "../api/client";
 import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
@@ -109,6 +109,17 @@ function ChangePasswordForm() {
 }
 
 function AccountPage() {
+  const { hash } = useLocation();
+
+  // /account#firm (from the Home "Firm settings" tile): scroll to that section.
+  useEffect(() => {
+    if (!hash) return;
+    const timer = setTimeout(() => {
+      document.querySelector(hash)?.scrollIntoView({ block: "start" });
+    }, 300); // give the firm card a moment to load
+    return () => clearTimeout(timer);
+  }, [hash]);
+
   const { user } = useAuth();
   const lawyerId = user.lawyer_id;
   // The linked lawyer profile (name, phone), if this login belongs to a lawyer.

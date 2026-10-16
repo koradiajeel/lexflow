@@ -64,8 +64,8 @@ Rules:
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
-- `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/dashboard`);
-  `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo, nav links Cases/Clients/Lawyers (+ Users for Owner only) via `NavLink`, email = link to /account ("Account" on phones), role badge, Sign out); `*` -> `/dashboard`.
+- `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/home`);
+  `/home`, `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo -> /home, nav links Home/Cases/Clients/Lawyers (+ Users for Owner only) via `NavLink`, email = link to /account ("Account" on phones), role badge (hidden on phones), Sign out); `*` -> `/home`.
 - `frontend/src/auth/`: `AuthProvider.jsx` (`user` incl. `lawyer_id`, `loading`, `signedOut`, `signIn(token)`, `signOut()`; checks `/auth/me` on start;
   after a deliberate sign-out `ProtectedRoute` doesn't remember the last page, so the next user starts at /dashboard),
   `useAuth.js` hook, `authContext.js`, `ProtectedRoute.jsx`, `PublicOnlyRoute.jsx`. Add new logged-in pages as child routes of `AppLayout`.
@@ -80,6 +80,10 @@ Rules:
 - `ClientsPage` / `LawyersPage` are thin configs for `PeopleManager.jsx` (paginated table, Add/Edit in a Modal with `PersonForm.jsx`,
   Delete with confirm; backend 409s shown as messages). `config.limits` mirrors the backend schema min/max lengths.
   Optional `config.extraColumn` adds a column: LawyersPage uses it for `CreateLoginButton.jsx` ("Has login" badge or Create login popup).
+- `HomePage.jsx` (/home, landing page after login): welcome strip (avatar letter, email, role, firm name), "Search sections"
+  filter, and a grid of section tiles (`MODULES` list; each tile's `show(user)` uses `permissions.js`, so roles only see
+  sections they can use). Icons in `components/ModuleIcon.jsx`. Tiles link to pages; "New case" -> `/dashboard?new=1`
+  (Dashboard opens the New case popup and drops `new` on close); "Firm settings" -> `/account#firm` (AccountPage scrolls there).
 - `AccountPage.jsx` (/account): email, role, linked lawyer profile + "View my cases", `FirmCard.jsx` ("Your firm": everyone
   sees name/email/phone/address from `GET /law-firms/{law_firm_id}`; Owner gets Edit -> PATCH), change password form.
 - `CaseDetailPage` has "Edit details" (permission `case.update`) -> `EditCaseForm.jsx` popup (title + description, PATCH).

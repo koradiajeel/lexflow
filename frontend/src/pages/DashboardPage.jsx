@@ -46,7 +46,18 @@ function DashboardPage() {
   const canCreate =
     can(user, "case.create") && (can(user, "case.assignAnyLawyer") || Boolean(myLawyerId));
   const navigate = useNavigate();
-  const closeForm = useCallback(() => setCreating(false), []);
+  const closeForm = useCallback(() => {
+    setCreating(false);
+    // Drop ?new=1 (set by the Home "New case" tile) so the popup doesn't reopen.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("new");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   // Load client and lawyer names once, to show names instead of IDs in the table.
   useEffect(() => {
@@ -205,7 +216,7 @@ function DashboardPage() {
         <Pagination page={page} hasNext={result.hasNext} onChange={goToPage} />
       )}
 
-      {creating && (
+      {canCreate && (creating || searchParams.get("new") === "1") && (
         <Modal title="New case" onClose={closeForm}>
           <NewCaseForm
             clients={lists.clients}

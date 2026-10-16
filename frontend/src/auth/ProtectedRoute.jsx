@@ -3,7 +3,7 @@ import { useAuth } from "./useAuth";
 
 // Wraps pages that need a login. Not logged in -> send to /login,
 // and remember where the user wanted to go so Login can send them back
-// (but not after a deliberate "Sign out": then the next login starts at the dashboard).
+// (but not after a deliberate "Sign out": then the next login starts at Home).
 function ProtectedRoute() {
   const { user, loading, signedOut } = useAuth();
   const location = useLocation();

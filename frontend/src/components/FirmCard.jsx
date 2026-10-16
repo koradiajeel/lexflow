@@ -151,7 +151,7 @@ function FirmCard() {
   const firm = state.firm;
 
   return (
-    <section className="card">
+    <section className="card" id="firm">
       <div className="section-header">
         <h2 className="section-title">Your firm</h2>
         {canEdit && firm && (
