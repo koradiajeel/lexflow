@@ -14,10 +14,10 @@ from app.api.routes.auth import get_current_user,require_role
 from app.core.database import get_db
 from app.models.case import Case
 from app.models.document import Document
-from app.models.lawyer import Lawyer
 from app.models.user import User
 from app.schemas.document import DocumentCreate, DocumentResponse
 from app.services import storage
+from app.services.case_access import user_can_see_case
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 ALLOWED_CONTENT_TYPES = {
@@ -33,14 +33,10 @@ router = APIRouter()
 
 
 def get_case_for_user(db: Session, case_id: UUID, current_user: User) -> Case:
+    """Return the case if this user may see it (same firm; a Lawyer only their own cases), else 404."""
     case = db.scalar(select(Case).where(Case.id == case_id))
-    if case is None:
+    if case is None or not user_can_see_case(db, case, current_user):
         raise HTTPException(status_code=404, detail="case not found")
-
-    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
-    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
-        raise HTTPException(status_code=404, detail="case not found")
-
     return case
 
 

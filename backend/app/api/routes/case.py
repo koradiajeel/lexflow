@@ -12,18 +12,15 @@ from app.models.enums import CaseStatus
 from app.models.lawyer import Lawyer
 from app.models.user import User
 from app.schemas.case import CaseCreate, CaseResponse, CaseUpdate
+from app.services.case_access import sees_only_own_cases, user_can_see_case
 
 router = APIRouter()
 
 
 def get_case_in_firm(db: Session, case_id: UUID, current_user: User) -> Case:
-    """Return the case if it exists AND its lawyer belongs to the user's firm, else 404."""
+    """Return the case if this user may see it (same firm; a Lawyer only their own cases), else 404."""
     case = db.scalar(select(Case).where(Case.id == case_id))
-    if case is None:
-        raise HTTPException(status_code=404, detail="Case not found")
-
-    lawyer = db.scalar(select(Lawyer).where(Lawyer.id == case.lawyer_id))
-    if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
+    if case is None or not user_can_see_case(db, case, current_user):
         raise HTTPException(status_code=404, detail="Case not found")
     return case
 
@@ -43,6 +40,9 @@ def list_cases(
         .join(Lawyer, Case.lawyer_id == Lawyer.id)
         .where(Lawyer.law_firm_id == current_user.law_firm_id)
     )
+    # A Lawyer only sees cases assigned to their own lawyer profile.
+    if sees_only_own_cases(current_user):
+        stmt = stmt.where(Lawyer.user_id == current_user.id)
 
     if status_filter is not None:
         stmt = stmt.where(Case.status == status_filter)
@@ -68,6 +68,12 @@ def create_case(
     lawyer = db.scalar(select(Lawyer).where(Lawyer.id == data.lawyer_id))
     if lawyer is None or lawyer.law_firm_id != current_user.law_firm_id:
         raise HTTPException(status_code=404, detail="Lawyer not found")
+
+    if sees_only_own_cases(current_user) and lawyer.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Lawyers can only create cases assigned to themselves",
+        )
 
     case = Case(
         title=data.title.strip(),
