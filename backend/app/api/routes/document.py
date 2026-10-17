@@ -1,8 +1,9 @@
 import uuid
 from uuid import UUID
 from pathlib import Path
+from urllib.parse import quote
 
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from fastapi import File, UploadFile
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -142,11 +143,18 @@ def download_document(
     # firm check: reuses your helper, which 404s on a cross-firm case
     get_case_for_user(db, doc.case_id, current_user)
 
-    path = storage.get_file_path(doc.storage_key)
-    if not path.exists():
+    # Works the same for local files and S3: the backend reads the file and sends it on,
+    # so the bucket stays private and the frontend keeps using its login token.
+    content = storage.read_file(doc.storage_key)
+    if content is None:
         raise HTTPException(status_code=404, detail="File missing from storage")
 
-    return FileResponse(path, media_type=doc.content_type, filename=doc.filename)
+    return Response(
+        content=content,
+        media_type=doc.content_type,
+        headers={"Content-Disposition": f"attachment; filename*=utf-8''{quote(doc.filename)}"},
+    )
+
 
 
 @router.delete("/documents/{document_id}", status_code=204)
