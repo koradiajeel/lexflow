@@ -75,4 +75,6 @@ def test_other_s3_errors_are_not_hidden(fake_s3, monkeypatch):
 
 
 def test_local_is_the_default():
-    assert storage.using_s3() is False
+    # The default written in config.py (used when .env has no STORAGE_BACKEND line)
+    default = type(settings).model_fields["STORAGE_BACKEND"].default
+    assert default == "local"

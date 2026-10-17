@@ -1246,3 +1246,26 @@ select.input {
     width: 100%;
   }
 }
+
+/* ---------- Email document popup ---------- */
+
+.email-file {
+  overflow-wrap: anywhere;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--blue-softer);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.email-confirm {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.label-optional {
+  font-weight: 400;
+  color: var(--muted);
+}

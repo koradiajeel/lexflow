@@ -3,8 +3,12 @@ import { apiFetch, apiFetchBlob } from "../api/client";
 import { can } from "../auth/permissions";
 import { useAuth } from "../auth/useAuth";
 import DocumentPreview from "./DocumentPreview";
+import EmailDocumentForm from "./EmailDocumentForm";
+import Modal from "./Modal";
 
 const MAX_SIZE = 20 * 1024 * 1024; // same 20 MB limit as the backend
+// Gmail rejects emails over ~25 MB and attachments grow ~33%, so the backend allows 18 MB.
+const MAX_EMAIL_SIZE = 18 * 1024 * 1024;
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
 // Types the browser can show by itself. Word files can only be downloaded.
 const PREVIEWABLE = ["application/pdf", "image/png", "image/jpeg"];
@@ -50,6 +54,25 @@ function EyeIcon() {
   );
 }
 
+function MailIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </svg>
+  );
+}
+
 // Short label for the file icon, e.g. "PDF" or "DOCX".
 function fileLabel(filename) {
   const ext = filename.includes(".") ? filename.split(".").pop() : "";
@@ -59,11 +82,14 @@ function fileLabel(filename) {
 function DocumentsPanel({ caseId }) {
   const { user } = useAuth();
   const canDelete = can(user, "document.delete"); // everyone can upload, view and download
+  const canEmail = can(user, "document.email");
   const [state, setState] = useState({ key: null, documents: [], error: "" });
   const [uploading, setUploading] = useState(false);
   const [busyId, setBusyId] = useState(null); // document currently downloading/deleting
   const [message, setMessage] = useState({ type: "", text: "" });
   const [preview, setPreview] = useState(null); // { doc, url } while the preview popup is open
+  const [emailing, setEmailing] = useState(null); // document whose "Email" popup is open
+  const closeEmail = useCallback(() => setEmailing(null), []);
   const fileInput = useRef(null);
 
   useEffect(() => {
@@ -225,6 +251,23 @@ function DocumentsPanel({ caseId }) {
                     <EyeIcon />
                   </button>
                 )}
+                {canEmail && (
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Email ${doc.filename}`}
+                    title={
+                      doc.size > MAX_EMAIL_SIZE ? "Too large to email (max 18 MB)" : "Email this document"
+                    }
+                    disabled={busyId === doc.id || doc.size > MAX_EMAIL_SIZE}
+                    onClick={() => {
+                      setMessage({ type: "", text: "" });
+                      setEmailing(doc);
+                    }}
+                  >
+                    <MailIcon />
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
@@ -247,6 +290,19 @@ function DocumentsPanel({ caseId }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {emailing && (
+        <Modal title="Email document" onClose={closeEmail}>
+          <EmailDocumentForm
+            doc={emailing}
+            onSent={(result) => {
+              setEmailing(null);
+              setMessage({ type: "success", text: `Sent ${result.filename} to ${result.sent_to}.` });
+            }}
+            onCancel={closeEmail}
+          />
+        </Modal>
       )}
 
       {preview && (

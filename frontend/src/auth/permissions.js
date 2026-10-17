@@ -7,6 +7,7 @@ const RULES = {
   "case.assignAnyLawyer": ["Owner"], // a Lawyer can only create cases assigned to themselves
   "case.update": ["Owner", "Lawyer"], // change status (PATCH /cases/{id})
   "document.delete": ["Owner", "Lawyer"], // DELETE /documents/{id} (upload/download: everyone)
+  "document.email": ["Owner", "Lawyer"], // POST /documents/{id}/email (send outside the firm)
   "client.create": ["Owner", "Lawyer"],
   "client.update": ["Owner", "Lawyer"],
   "client.delete": ["Owner"],

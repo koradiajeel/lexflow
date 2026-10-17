@@ -20,6 +20,14 @@ class settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
 
+    
+    # Email (SMTP). Empty SMTP_USER = email sending is switched off.
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    EMAIL_FROM: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"
