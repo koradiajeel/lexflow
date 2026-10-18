@@ -53,6 +53,24 @@ const PATHS = {
       <path d="M9 21v-6h6v6M9 11h.01M15 11h.01" />
     </>
   ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+    </>
+  ),
+  cloud: (
+    <>
+      <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z" />
+      <path d="M12 16v-5M9.5 13.5L12 11l2.5 2.5" />
+    </>
+  ),
 };
 
 function ModuleIcon({ name }) {

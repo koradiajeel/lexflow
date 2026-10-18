@@ -7,6 +7,7 @@ import CaseDetailPage from "./pages/CaseDetailPage";
 import ClientsPage from "./pages/ClientsPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
+import LandingPage from "./pages/LandingPage";
 import LawyersPage from "./pages/LawyersPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -16,6 +17,9 @@ import UsersPage from "./pages/UsersPage";
 function App() {
   return (
     <Routes>
+      {/* Public home page: open to everyone, logged in or not */}
+      <Route path="/" element={<LandingPage />} />
+
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

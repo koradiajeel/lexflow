@@ -42,7 +42,9 @@ function LoginPage() {
     <main className="page-center">
       <div className="card auth-card">
         <div>
-          <Logo />
+          <Link to="/" aria-label="LexFlow home">
+            <Logo />
+          </Link>
           <h1 className="auth-title">Welcome back</h1>
           <p className="subtitle">Sign in to manage your firm's cases.</p>
         </div>

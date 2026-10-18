@@ -26,7 +26,7 @@ Learning + portfolio project by a B.Tech AI & Data Science student: build it lik
 - `requirements.txt`: use `python -m pip freeze | Out-File -Encoding utf8 requirements.txt` (not `>`, it writes UTF-16).
 - npm works normally. Vite may run on 5174 if 5173 is busy.
 
-## Backend API (65 passing tests)
+## Backend API (82 passing tests)
 | Area | Routes | Who |
 |---|---|---|
 | Auth | `POST /auth/register` (firm + Owner, returns token), `POST /auth/login` (JSON), `GET /auth/me` (incl. `lawyer_id`), `POST /auth/change-password` | public / any |
@@ -35,7 +35,7 @@ Learning + portfolio project by a B.Tech AI & Data Science student: build it lik
 | Lawyers | `GET /lawyers/`, `POST /lawyers/`, `GET/PATCH/DELETE /lawyers/{id}`, `POST /lawyers/{id}/create-login` | GET any; write Owner |
 | Clients | `GET /clients/`, `POST /clients/`, `GET/PATCH/DELETE /clients/{id}` | GET any; create/update Owner+Lawyer; delete Owner |
 | Cases | `GET /cases/` (`status`, `client_id`, `lawyer_id`, `limit` 1-100, `offset`), `POST /cases/`, `GET/PATCH /cases/{id}` | GET any (Lawyer: own cases only); write Owner+Lawyer |
-| Documents | `POST/GET /cases/{id}/documents`, `GET /documents/{id}`, `GET /documents/{id}/download`, `DELETE /documents/{id}` | upload/download any; delete Owner+Lawyer |
+| Documents | `POST/GET /cases/{id}/documents`, `GET /documents/{id}`, `GET /documents/{id}/download`, `DELETE /documents/{id}`, `POST /documents/{id}/email` | upload/download any; delete + email Owner+Lawyer |
 
 Rules:
 - JWT payload: `sub` (user UUID), `law_firm_id`, `role`. Roles `Owner` / `Lawyer` / `Staff` (case-sensitive).
@@ -52,7 +52,17 @@ Rules:
 - Upload: 20 MB max, pdf/png/jpeg/doc/docx, magic-byte check (`app/services/file_validation.py`),
   stored in `backend/uploads/cases/<case_id>/<uuid>` (git-ignored).
 - Errors: `{"detail": "..."}`; 401 no/expired token, 403 wrong role, 404 not found/other firm, 409 conflict, 415 bad file type, 422 validation.
-- Tests: `tests/test_auth_users.py`, `tests/test_permissions.py`, `tests/test_lawyer_login.py`, `tests/test_case_visibility.py`. Must keep passing after any backend change.
+- File storage (`app/services/storage.py`): `save_file` / `read_file` / `delete_file`; `.env` `STORAGE_BACKEND=local` (backend/uploads)
+  or `s3` (bucket `S3_BUCKET` in `AWS_REGION`, keys `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` of IAM user `lexflow-app`,
+  policy `LexFlowS3Access`: Put/Get/DeleteObject + ListBucket on that bucket only). Downloads stream through the backend.
+- Email (`app/services/email.py`, Gmail SMTP: `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD` (App password)/`EMAIL_FROM`):
+  `build_message` + `send_message`. `POST /documents/{id}/email {to, message}`: Owner+Lawyer, same case visibility as download,
+  max 18 MB (`MAX_ATTACHMENT_BYTES`), From "<lawyer name or email> (<firm>) via LexFlow", Reply-To = sender, logged in
+  `document_emails` (migration `fe8d6722ea01`; document_id ON DELETE SET NULL + filename snapshot) only after a successful send.
+  503 not configured, 502 SMTP failure, 413 too large.
+- Tests: `tests/test_auth_users.py`, `test_permissions.py`, `test_lawyer_login.py`, `test_case_visibility.py`, `test_storage_s3.py`
+  (fake S3 client), `test_document_email.py` (fake outbox). `tests/conftest.py` forces local storage and empty SMTP login for
+  every test, so tests never touch the real bucket or send real email. Must keep passing after any backend change.
 
 ## Frontend status
 - `frontend/src/api/client.js`: `getToken`, `setToken`, `clearToken`, `apiFetch(path, options)`
@@ -80,6 +90,11 @@ Rules:
 - `ClientsPage` / `LawyersPage` are thin configs for `PeopleManager.jsx` (paginated table, Add/Edit in a Modal with `PersonForm.jsx`,
   Delete with confirm; backend 409s shown as messages). `config.limits` mirrors the backend schema min/max lengths.
   Optional `config.extraColumn` adds a column: LawyersPage uses it for `CreateLoginButton.jsx` ("Has login" badge or Create login popup).
+- `LandingPage.jsx` (`/`, public, logged in or not): marketing home page - sticky header (Features/How it works/Roles anchors,
+  Sign in / Register, or "Open LexFlow" when logged in), hero + illustrative case-list preview, 6 real features, 3 steps,
+  role cards, CTA band, footer. Only real capabilities - no fake stats/customers. Login/Register logos link back to `/`.
+- `DocumentsPanel` also has an Email (envelope) button (permission `document.email`, disabled over 18 MB) ->
+  `EmailDocumentForm.jsx` popup: To + optional message -> "Send <file> to <address>?" confirm -> POST, then "Sent ... to ...".
 - `HomePage.jsx` (/home, landing page after login): welcome strip (avatar letter, email, role, firm name), "Search sections"
   filter, and a grid of section tiles (`MODULES` list; each tile's `show(user)` uses `permissions.js`, so roles only see
   sections they can use). Icons in `components/ModuleIcon.jsx`. Tiles link to pages; "New case" -> `/dashboard?new=1`
@@ -123,8 +138,9 @@ Rules:
 8. ~~Role-based UI (hide actions the role can't do)~~ (done)
 9. ~~New case form (`+ New case` on the dashboard, Owner + Lawyer)~~ (done)
 10. ~~Polish: expired-session handling, edit case details, firm settings~~ (done)
-Next (not started, pick one): README with screenshots | Docker | deployment (needs production `VITE_API_URL` + CORS origin).
-Later: S3 storage, monitoring.
+11. ~~Amazon S3 document storage~~, ~~email a document~~, ~~public landing page~~ (done)
+Next (not started, pick one): hearings + 24 h email reminders (reuse `email.py`) | copy old local uploads to S3 |
+README with screenshots | Docker | deployment (needs production `VITE_API_URL` + CORS origin). Later: monitoring.
 
 ## Known follow-ups
 - Client email/phone are unique across the whole DB, not per firm (needs migration).

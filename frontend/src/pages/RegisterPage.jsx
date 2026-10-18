@@ -67,7 +67,9 @@ function RegisterPage() {
     <main className="page-center">
       <div className="card auth-card auth-card-wide">
         <div>
-          <Logo />
+          <Link to="/" aria-label="LexFlow home">
+            <Logo />
+          </Link>
           <h1 className="auth-title">Register your firm</h1>
           <p className="subtitle">
             Create your law firm and your Owner account in one step.
