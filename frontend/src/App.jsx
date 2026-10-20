@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import { IS_DEMO } from "./config";
 import PublicOnlyRoute from "./auth/PublicOnlyRoute";
 import AppLayout from "./components/AppLayout";
 import AccountPage from "./pages/AccountPage";
@@ -15,6 +16,16 @@ import UsersPage from "./pages/UsersPage";
 
 // The map of URLs -> pages.
 function App() {
+  // Public demo (GitHub Pages, no backend): only the landing page exists.
+  if (IS_DEMO) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       {/* Public home page: open to everyone, logged in or not */}

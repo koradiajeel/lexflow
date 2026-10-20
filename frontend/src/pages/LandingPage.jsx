@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useAuth } from "../auth/useAuth";
+import { GITHUB_URL, IS_DEMO } from "../config";
 import Logo from "../components/Logo";
 import ModuleIcon from "../components/ModuleIcon";
 import StatusBadge from "../components/StatusBadge";
@@ -72,15 +73,29 @@ const PREVIEW_CASES = [
 function LandingPage() {
   const { user } = useAuth();
 
-  const primaryCta = user ? (
-    <Link to="/home" className="btn btn-primary">
-      Open LexFlow
-    </Link>
-  ) : (
-    <Link to="/register" className="btn btn-primary">
-      Register your firm
-    </Link>
+  // On the public demo (GitHub Pages) there's no backend yet, so point to the code instead.
+  const githubButton = (className) => (
+    <a href={GITHUB_URL} className={className} target="_blank" rel="noreferrer">
+      View on GitHub
+    </a>
   );
+
+  let primaryCta;
+  if (IS_DEMO) {
+    primaryCta = githubButton("btn btn-primary");
+  } else if (user) {
+    primaryCta = (
+      <Link to="/home" className="btn btn-primary">
+        Open LexFlow
+      </Link>
+    );
+  } else {
+    primaryCta = (
+      <Link to="/register" className="btn btn-primary">
+        Register your firm
+      </Link>
+    );
+  }
 
   return (
     <div className="landing">
@@ -94,7 +109,9 @@ function LandingPage() {
           <a href="#roles">Roles</a>
         </nav>
         <div className="landing-header-actions">
-          {user ? (
+          {IS_DEMO ? (
+            githubButton("btn btn-outline btn-sm")
+          ) : user ? (
             <Link to="/home" className="btn btn-primary btn-sm">
               Open LexFlow
             </Link>
@@ -125,12 +142,17 @@ function LandingPage() {
             </p>
             <div className="landing-ctas">
               {primaryCta}
-              {!user && (
+              {!user && !IS_DEMO && (
                 <Link to="/login" className="btn btn-outline">
                   Sign in
                 </Link>
               )}
             </div>
+            {IS_DEMO && (
+              <p className="landing-demo-note">
+                Live demo coming soon. Sign-in will open once the backend is online.
+              </p>
+            )}
           </div>
 
           <div className="landing-preview" aria-hidden="true">
@@ -210,7 +232,11 @@ function LandingPage() {
         {/* ---------- Final call to action ---------- */}
         <section className="landing-cta">
           <h2>Ready to organise your firm?</h2>
-          <p>Set up your firm and invite your team today.</p>
+          <p>
+            {IS_DEMO
+              ? "The live demo is coming soon. Meanwhile, explore the code."
+              : "Set up your firm and invite your team today."}
+          </p>
           {primaryCta}
         </section>
       </main>
@@ -218,8 +244,16 @@ function LandingPage() {
       <footer className="landing-footer">
         <Logo />
         <nav aria-label="Footer">
-          <Link to="/login">Sign in</Link>
-          <Link to="/register">Register your firm</Link>
+          {IS_DEMO ? (
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+          ) : (
+            <>
+              <Link to="/login">Sign in</Link>
+              <Link to="/register">Register your firm</Link>
+            </>
+          )}
         </nav>
         <span>&copy; {new Date().getFullYear()} LexFlow</span>
       </footer>

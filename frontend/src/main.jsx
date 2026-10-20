@@ -7,7 +7,8 @@ import AuthProvider from './auth/AuthProvider.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* BASE_URL is "/" locally and "/lexflow/" on GitHub Pages */}
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <App />
       </AuthProvider>

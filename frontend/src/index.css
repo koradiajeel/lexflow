@@ -1675,3 +1675,13 @@ html {
     padding: 24px 16px;
   }
 }
+
+/* Public demo note (GitHub Pages build only) */
+.landing-demo-note {
+  padding: 8px 14px;
+  border-radius: 10px; /* not a full pill: the text can wrap onto two lines */
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 14px;
+  font-weight: 600;
+}

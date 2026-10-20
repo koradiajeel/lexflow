@@ -72,6 +72,11 @@ Rules:
   sign the user out with `sessionExpired = true` -> ProtectedRoute sends them to /login (remembering the page) and
   LoginPage shows "Your session expired". A 401 without a token (wrong password) doesn't trigger it.
 - `frontend/.env.development`: `VITE_API_URL=http://localhost:8000`
+- Public demo on GitHub Pages: https://koradiajeel.github.io/lexflow/ - `.github/workflows/deploy-frontend.yml` builds on every
+  push to main touching `frontend/**` (or manually from the Actions tab) with `PAGES_BASE=/lexflow/` (Vite `base`, router
+  `basename={import.meta.env.BASE_URL}`) and `VITE_DEMO_MODE=true` (`src/config.js` `IS_DEMO`: only the landing page,
+  Sign in/Register replaced by "View on GitHub" + "Live demo coming soon"; every other path -> `/`), and copies
+  `index.html` to `404.html` so deep links work. No backend online yet. Local Git Bash builds need `MSYS_NO_PATHCONV=1`.
 - Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/home`);
