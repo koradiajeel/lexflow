@@ -5,8 +5,8 @@ from urllib.parse import quote_plus
 
 
 DATABASE_URL = (
-    f"postgresql+pg8000://{settings.DATABASE_USER}:"
-    f"{settings.DATABASE_PASSWORD}@"
+    f"postgresql+pg8000://{quote_plus(settings.DATABASE_USER)}:"
+    f"{quote_plus(settings.DATABASE_PASSWORD)}@"
     f"{settings.DATABASE_HOST}:"
     f"{settings.DATABASE_PORT}/"
     f"{settings.DATABASE_NAME}"

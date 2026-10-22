@@ -26,7 +26,7 @@ Learning + portfolio project by a B.Tech AI & Data Science student: build it lik
 - `requirements.txt`: use `python -m pip freeze | Out-File -Encoding utf8 requirements.txt` (not `>`, it writes UTF-16).
 - npm works normally. Vite may run on 5174 if 5173 is busy.
 
-## Backend API (82 passing tests)
+## Backend API (85 passing tests)
 | Area | Routes | Who |
 |---|---|---|
 | Auth | `POST /auth/register` (firm + Owner, returns token), `POST /auth/login` (JSON), `GET /auth/me` (incl. `lawyer_id`), `POST /auth/change-password` | public / any |
@@ -77,7 +77,11 @@ Rules:
   `basename={import.meta.env.BASE_URL}`) and `VITE_DEMO_MODE=true` (`src/config.js` `IS_DEMO`: only the landing page,
   Sign in/Register replaced by "View on GitHub" + "Live demo coming soon"; every other path -> `/`), and copies
   `index.html` to `404.html` so deep links work. No backend online yet. Local Git Bash builds need `MSYS_NO_PATHCONV=1`.
-- Backend CORS allows `http://localhost:5173` and `http://localhost:5174`.
+- Backend CORS: `CORS_ORIGINS` setting (comma-separated; default `http://localhost:5173,http://localhost:5174`); on Render add the Vercel URL.
+- Deployment (in progress): `render.yaml` Blueprint = `lexflow-api` (Python 3.12.10, rootDir backend, start: `alembic upgrade head && uvicorn ...`,
+  health `/health`) + free Postgres `lexflow-db` (region singapore); secrets (`CORS_ORIGINS`, AWS keys, `SMTP_PASSWORD`) entered in Render.
+  Frontend on Vercel: root `frontend`, `frontend/vercel.json` rewrites all paths to `index.html`, env `VITE_API_URL` = Render URL.
+  Alembic's `env.py` takes the DB URL from `app.core.database.DATABASE_URL` (not `alembic.ini`); DB user/password are URL-quoted.
 - Routing: `react-router` v8 (import from `"react-router"`, not `react-router-dom`). `BrowserRouter` + `AuthProvider` wrap `<App />` in `main.jsx`.
 - `frontend/src/App.jsx`: route map. `/login`, `/register` inside `PublicOnlyRoute` (logged in -> redirect to `state.from` or `/home`);
   `/home`, `/dashboard`, `/cases/:caseId`, `/clients`, `/lawyers`, `/account`, `/users` inside `ProtectedRoute` (not logged in -> `/login`) and `AppLayout` (top bar: logo -> /home, one `Home` NavLink (hidden on phones; sections are opened from the Home tiles, not the top bar), email = link to /account ("Account" on phones), role badge (hidden on phones), Sign out); `*` -> `/home`.

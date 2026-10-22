@@ -12,6 +12,9 @@ class settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    # Websites allowed to call this API (comma-separated). On Render, add the Vercel address.
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174"
+
     
     # File storage: "local" (backend/uploads, the default) or "s3" (Amazon S3 bucket)
     STORAGE_BACKEND: str = "local"

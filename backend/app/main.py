@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 from app.api.routes import law_firm
 from app.api.routes import lawyer
 from app.api.routes import client
@@ -11,9 +12,16 @@ from app.api.routes import document
 
 app = FastAPI()
 
+
+@app.get("/health", tags=["health"])
+def health():
+    """Used by Render to check the server is up."""
+    return {"status": "ok"}
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -18,9 +18,13 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.core.database import Base
+from app.core.database import DATABASE_URL, Base
 
 target_metadata = Base.metadata
+
+# Use the app's own database settings (.env locally, environment variables on the server).
+# "%" is doubled because Alembic's config treats a single "%" as a special character.
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
